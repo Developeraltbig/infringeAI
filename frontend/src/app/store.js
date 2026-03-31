@@ -1,18 +1,50 @@
-import { configureStore } from '@reduxjs/toolkit'
+import storage from "redux-persist/lib/storage"; 
+import {
+  FLUSH,
+  PAUSE,
+  PURGE,
+  PERSIST,
+  REGISTER,
+  REHYDRATE,
+  persistStore,
+  persistReducer,
+} from "redux-persist";
+// import { apiSlice } from "./features/api/apiSlice";
+import authReducer from "../features/auth/authSlice";
 import analysisReducer from '../features/slice/analysisSlice'
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { apiSlice } from "../features/api/apiSlice";
 
-// Configure the Redux store
+console.log("hgcjfchcjjhmng",window.localStorage)
+// console.log(storage)
+// console.log("STORAGE:", storage);
+// console.log("getItem:", storage?.default?.getItem);
+
+const fixedStorage = storage.default || storage;
+
+const rootReducer = combineReducers({
+  [apiSlice.reducerPath]: apiSlice.reducer,
+  auth: authReducer,
+  analysis: analysisReducer,
+});
+
+const persistConfig = {
+  key: "user-root",
+  storage: fixedStorage,
+  whitelist: ["auth"],
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 export const store = configureStore({
-  reducer: {
-    analysis: analysisReducer, // our main slice
-  },
-
-  // Middleware: includes thunk by default
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // optional: avoid errors with non-serializable values
-    }),
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER,],
+      },
+    }).concat(apiSlice.middleware),
+  devTools: !import.meta.env.PROD, // Enable devtools only in development
+});
 
-  // Enable Redux DevTools in development only
-  devTools: import.meta.env.PROD,
-})
+export const persistor = persistStore(store);
