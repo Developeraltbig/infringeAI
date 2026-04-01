@@ -1,3 +1,26 @@
+// 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -12,39 +35,60 @@ const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const persistedUser = useSelector(selectCurrentUser);
 
-  // This automatically runs when the app loads.
-  // It sends the HttpOnly cookie to the backend.
-  const { data, isLoading, isSuccess } = useCheckAuthQuery();
+  // Runs on app load (sends HttpOnly cookie automatically)
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isSuccess,
+    isError,
+    isUninitialized,
+  } = useCheckAuthQuery();
+
+  // Combine all loading states
+  const isAuthChecking = isLoading || isFetching || isUninitialized;
 
   useEffect(() => {
     if (isSuccess && data) {
       const serverUser = data?.data?.user;
 
-      // THE CRITICAL CHECK
+      // 🔒 Security check: mismatch between persisted and server user
       if (
         serverUser &&
         persistedUser &&
         persistedUser?._id !== serverUser?._id
       ) {
-        // Perform a hard reset of the client's state for security.
         dispatch(logOut());
-        persistor.purge(); // Clear the corrupted redux-persist storage
+        persistor.purge();
         return;
       }
 
+      // ✅ Set fresh credentials from server
       dispatch(
         setCredentials({
           user: serverUser,
-        }),
+        })
       );
     }
-  }, [isSuccess, data, dispatch]);
 
-  if (isLoading) {
-    return <div className="loader-container">Authorization Check</div>;
+    // ❌ If auth fails, clear everything
+    if (isError) {
+      dispatch(logOut());
+      persistor.purge();
+    }
+  }, [isSuccess, isError, data, dispatch, persistedUser]);
+
+  // ⏳ Block rendering until auth check completes
+  if (isAuthChecking) {
+    return (
+      <div className="loader-container">
+        <div className="spinner" />
+        <p>Checking authorization...</p>
+      </div>
+    );
   }
 
-  // Once loading is done (whether success or error), render the app
+  // ✅ Render app after auth check
   return children;
 };
 

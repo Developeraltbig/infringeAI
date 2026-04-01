@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { X, Menu, PanelLeft, SquarePen, FolderOpen, ChevronRight } from 'lucide-react';
-import { toggleSidebar } from '../features/slice/analysisSlice';
+import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  X,
+  Menu,
+  PanelLeft,
+  SquarePen,
+  FolderOpen,
+  ChevronRight,
+} from "lucide-react";
+import { toggleSidebar } from "../features/slice/analysisSlice";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -76,11 +83,11 @@ const Sidebar = () => {
         <div className="flex flex-col w-full">
           {/* New Analysis Link */}
           <div
-            onClick={() => handleNavigation("/")}
+            onClick={() => handleNavigation("/dashboard")}
             className={`cursor-pointer transition-colors flex items-center overflow-hidden
               ${
                 isSidebarOpen
-                  ? `px-8 py-4 ${location.pathname === "/" ? "bg-[#333333]" : "hover:bg-[#1a1a1a]"}`
+                  ? `px-8 py-4 ${location.pathname === "/dashboard" ? "bg-[#333333]" : "hover:bg-[#1a1a1a]"}`
                   : "justify-center py-4"
               }`}
           >
@@ -90,7 +97,7 @@ const Sidebar = () => {
               </span>
             ) : (
               <div
-                className={`p-2 rounded-xl transition-colors ${location.pathname === "/" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
+                className={`p-2 rounded-xl transition-colors ${location.pathname === "/dashboard" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
               >
                 <SquarePen size={22} />
               </div>
@@ -99,11 +106,11 @@ const Sidebar = () => {
 
           {/* My Project Link */}
           <div
-            onClick={() => handleNavigation("/projects")}
+            onClick={() => handleNavigation("/dashboard/projects")}
             className={`cursor-pointer transition-colors flex items-center border-b border-[#222] overflow-hidden
               ${
                 isSidebarOpen
-                  ? `px-8 py-4 justify-between ${location.pathname === "/projects" ? "bg-[#1a1a1a]" : "hover:bg-[#1a1a1a]"}`
+                  ? `px-8 py-4 justify-between ${location.pathname === "/dashboard/my-project" ? "bg-[#1a1a1a]" : "hover:bg-[#1a1a1a]"}`
                   : "justify-center py-4"
               }`}
           >
@@ -118,7 +125,7 @@ const Sidebar = () => {
               </>
             ) : (
               <div
-                className={`p-2 rounded-xl transition-colors ${location.pathname === "/projects" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
+                className={`p-2 rounded-xl transition-colors ${location.pathname === "/dashboard/my-project" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
               >
                 <FolderOpen size={22} />
               </div>
@@ -153,117 +160,77 @@ const Sidebar = () => {
         )}
 
         {/* User Profile */}
-          <div className="mt-auto relative">
-      
-      {/* Invisible overlay to close modal when clicking outside */}
-      {isProfileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsProfileMenuOpen(false)}
-        />
-      )}
+        <div className="mt-auto relative">
+          {/* Invisible overlay to close modal when clicking outside */}
+          {isProfileMenuOpen && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setIsProfileMenuOpen(false)}
+            />
+          )}
 
-      {/* Google-Style Profile Modal */}
-      {isProfileMenuOpen && (
-        <div className="absolute bottom-[calc(100%+8px)] left-4 w-[230px] bg-black rounded-md shadow-xl border border-gray-200 z-50 flex flex-col items-center pt-6 pb-2 text-gray-800 cursor-default">
-          
-          {/* Large Avatar */}
-          <div className="w-16 h-16 rounded-full bg-[#00897b] flex items-center justify-center text-white text-3xl font-normal mb-3 uppercase">
-            U
-          </div>
-          
-          {/* User Info */}
-          <div className="text-[15px] text-white font-semibold mb-0.5">developer altbig</div>
-          <div className="text-[13px] text-gray-400 mb-5">user@gmail.com</div>
+          {/* Google-Style Profile Modal */}
+          {isProfileMenuOpen && (
+            <div className="absolute bottom-[calc(100%+8px)] left-4 w-[230px] bg-black rounded-md shadow-xl border border-gray-200 z-50 flex flex-col items-center pt-6 pb-2 text-gray-800 cursor-default">
+              {/* Large Avatar */}
+              <div className="w-16 h-16 rounded-full bg-[#00897b] flex items-center justify-center text-white text-3xl font-normal mb-3 uppercase">
+                U
+              </div>
 
-          <div className="w-full border-t border-gray-200"></div>
+              {/* User Info */}
+              <div className="text-[15px] text-white font-semibold mb-0.5">
+                developer altbig
+              </div>
+              <div className="text-[13px] text-gray-400 mb-5">
+                user@gmail.com
+              </div>
 
-          {/* Sign Out Button */}
-          <button className="w-full py-3.5 text-[14px] font-medium text-gray-400 hover:bg-gray-50 hover:text-black transition-colors">
-            Sign out
-          </button>
+              <div className="w-full border-t border-gray-200"></div>
 
-          <div className="w-full border-t border-gray-200"></div>
+              {/* Sign Out Button */}
+              <button className="w-full py-3.5 text-[14px] font-medium text-gray-400 hover:bg-gray-50 hover:text-black transition-colors">
+                Sign out
+              </button>
 
-          {/* Footer Links */}
-          <div className="w-full pt-3 pb-1 flex justify-center items-center gap-2 text-[12px] text-gray-500">
-            <span className="hover:text-gray-800 cursor-pointer hover:underline">Privacy Policy</span>
-            <span>•</span>
-            <span className="hover:text-gray-800 cursor-pointer hover:underline">Terms of Service</span>
-          </div>
-          
-        </div>
-      )}
+              <div className="w-full border-t border-gray-200"></div>
 
-      {/* Clickable Profile Button (Your existing code modified slightly) */}
-      <div
-        onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-        className={`flex items-center transition-colors border-t border-[#111] cursor-pointer hover:bg-[#1a1a1a] overflow-hidden
+              {/* Footer Links */}
+              <div className="w-full pt-3 pb-1 flex justify-center items-center gap-2 text-[12px] text-gray-500">
+                <span className="hover:text-gray-800 cursor-pointer hover:underline">
+                  Privacy Policy
+                </span>
+                <span>•</span>
+                <span className="hover:text-gray-800 cursor-pointer hover:underline">
+                  Terms of Service
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Clickable Profile Button (Your existing code modified slightly) */}
+          <div
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            className={`flex items-center transition-colors border-t border-[#111] cursor-pointer hover:bg-[#1a1a1a] overflow-hidden
           ${isSidebarOpen ? "px-4 py-4 gap-2" : "justify-center py-6"}
         `}
-      >
-        <span className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center border border-gray-700 bg-gray-800 text-gray-200 font-medium text-sm uppercase">
-          U
-        </span>
-
-        {isSidebarOpen && (
-          <span className="text-gray-300 text-[15px] flex items-center gap-2 whitespace-nowrap">
-            User{" "}
-            <span className="text-gray-500 text-sm">
-              <ChevronRight size={16} />
+          >
+            <span className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center border border-gray-700 bg-gray-800 text-gray-200 font-medium text-sm uppercase">
+              U
             </span>
-          </span>
-        )}
-      </div>
-      
-    </div>
+
+            {isSidebarOpen && (
+              <span className="text-gray-300 text-[15px] flex items-center gap-2 whitespace-nowrap">
+                User{" "}
+                <span className="text-gray-500 text-sm">
+                  <ChevronRight size={16} />
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
       </aside>
     </>
   );
 };
 
 export default Sidebar;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

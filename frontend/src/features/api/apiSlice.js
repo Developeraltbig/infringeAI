@@ -1,17 +1,15 @@
-import { toast } from "react-toastify";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { logOut, setCredentials } from "../auth/authSlice";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { logOut, setCredentials } from "../auth/authSlice";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const centralAuthUrl = import.meta.env.VITE_CENTRAL_AUTH_URL;
-
-console.log(centralAuthUrl);
+const centralAuthUrl = import.meta.env.VITE_PATSERO_BACKEND_URL;
 
 // Create a base query with credential inclusion
 const baseQuery = fetchBaseQuery({
   credentials: "include",
   baseUrl: import.meta.env.PROD
-    ? import.meta.env.VITE_BACKEND_URL
+    ? import.meta.env.VITE_INFRINGMENT_BACKEND_URL
     : "http://localhost:3001/api/v1", // Backend URL
   credentials: "include", // This is crucial for sending cookies
   prepareHeaders: (headers, { getState }) => {
@@ -42,7 +40,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
           withCredentials: true, // sends cookies
         },
       );
-      console.log("Refresh1");
 
       console.log("data", refreshResult);
 
@@ -58,11 +55,9 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
         result = await baseQuery(args, api, extraOptions);
       } else {
         // Refresh Failed!
-        console.log(refreshResult?.error);
         const refreshErrorStatus = refreshResult?.error?.status;
 
         if (refreshErrorStatus === 401 || refreshErrorStatus === 403) {
-          console.log("1");
           // Token is dead or revoked. Log out.
           api.dispatch(logOut());
 
