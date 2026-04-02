@@ -1,9 +1,8 @@
-
-import React from 'react';
-import { useSelector } from 'react-redux';
-import Stepper from '../components/Stepper'; // Import the Stepper
-import ModeSelector from '../components/ModeSelector';
-import SearchArea from '../components/SearchArea';
+import React from "react";
+import { useSelector } from "react-redux";
+import Stepper from "../components/Stepper"; // Import the Stepper
+import ModeSelector from "../components/ModeSelector";
+import SearchArea from "../components/SearchArea";
 
 const NewAnalysis = () => {
   // Get the current mode from Redux
@@ -11,7 +10,6 @@ const NewAnalysis = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col items-center mt-8 animate-fade-in-up">
-      
       {/* Conditionally show Stepper ONLY in interactive mode */}
       {/* {mode === 'interactive' && (
         <div className="w-full max-w-5xl mb-8">
@@ -27,7 +25,7 @@ const NewAnalysis = () => {
           Generate Professional Claim Charts In Minutes.
         </p>
       </div>
-      
+
       <ModeSelector />
       <SearchArea />
     </div>

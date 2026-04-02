@@ -49,3 +49,42 @@ function App() {
 }
 
 export default App;
+
+// import React, { Suspense, lazy } from "react";
+// import { Routes, Route, Navigate } from "react-router-dom";
+// import AuthProvider from "./layout/AuthProvider";
+// import GuestLayout from "./layout/GuestLayout";
+// import ProtectedLayout from "./layout/ProtectedLayout";
+
+// // Lazy Loaded Pages
+// const LandingPage = lazy(() => import("./pages/LandingPage"));
+// const Dashboard = lazy(() => import("./pages/Dashboard"));
+// const NewAnalysis = lazy(() => import("./pages/NewAnalysis"));
+// const Processing = lazy(() => import("./components/Processing"));
+// const ReportView = lazy(() => import("./pages/ReportView"));
+
+// const Loading = () => <div className="h-screen w-full flex items-center justify-center font-bold">LOADING...</div>;
+
+// function App() {
+//   return (
+//     <Suspense fallback={<Loading />}>
+//       <Routes>
+//         <Route element={<AuthProvider />}>
+//           <Route element={<GuestLayout />}><Route path="/" element={<LandingPage />} /></Route>
+
+//           <Route element={<ProtectedLayout />}>
+//             <Route path="/dashboard" element={<Dashboard />}>
+//               <Route index element={<NewAnalysis />} />
+//               <Route path="processing" element={<Processing />} />
+//               <Route path="report-view/:id" element={<ReportView />} />
+//             </Route>
+//           </Route>
+
+//           <Route path="*" element={<Navigate to="/" replace />} />
+//         </Route>
+//       </Routes>
+//     </Suspense>
+//   );
+// }
+
+// export default App;

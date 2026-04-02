@@ -49,7 +49,7 @@ const env = cleanEnv(process.env, {
   USER_COOKIE_DOMAIN: str({ default: "localhost" }),
   ADMIN_COOKIE_DOMAIN: str({ default: "localhost" }),
 
-  PATSERO_BACKEND_URL: url(),
+  PATSERO_BACKEND_URL: url({ default: "http://localhost:3000/api/v1" }),
   GEMINI_API_KEY: str(),
   EXA_API_KEY_1: str(),
   EXA_API_KEY_2: str(),

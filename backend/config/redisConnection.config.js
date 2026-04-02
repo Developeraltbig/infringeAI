@@ -11,20 +11,22 @@ export const redisConnection = new IORedis(REDIS_URL, {
 
   // Stability options
   retryStrategy: (times) => {
-    const maxRetries = 5; // Give up after 5 attempts (~30 seconds)
+    // 5 ki jagah 20 se 50 retries rakhein
+    const maxRetries = 50;
 
     if (times > maxRetries) {
       logger.error(
-        "Redis connection failed after maximum retries. Exiting process.",
+        "Redis connection failed after 50 attempts. Check if Redis server is running.",
       );
-      process.exit(1); // Kill the server if Redis is completely dead
+      return null; // process.exit(1) ki jagah null return karein taaki app crash na ho
     }
 
+    // Har retry ke beech mein gap badhayein (1s, 2s, 3s...)
+    const delay = Math.min(times * 1000, 5000);
     logger.warn(
-      `Retrying Redis connection... (Attempt ${times}/${maxRetries})`,
+      `Retrying Redis connection... (Attempt ${times}/${maxRetries}) in ${delay}ms`,
     );
-
-    return Math.min(times * 200, 2000); // Wait 200ms, 400ms, up to 2 seconds before next retry
+    return delay;
   },
 
   reconnectOnError: (err) => {

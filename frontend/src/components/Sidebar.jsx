@@ -1,230 +1,221 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import {
-  X,
-  Menu,
-  PanelLeft,
-  SquarePen,
+  LayoutDashboard,
   FolderOpen,
   ChevronRight,
+  ChevronDown,
+  Crown,
+  PanelLeft,
+  X,
+  ChevronUp,
 } from "lucide-react";
+import logo from "../assets/whiteLogo.png";
 import { toggleSidebar } from "../features/slice/analysisSlice";
+import { selectCurrentUser, logOut } from "../features/auth/authSlice";
+import { useGetProjectsQuery } from "../features/api/patentApiSlice";
+import UserProfileDropdown from "./UserProfileDropdown";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
-  const { isSidebarOpen, history } = useSelector((state) => state.analysis);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileAreaRef = useRef(null);
 
-  // Helper to close sidebar on mobile after clicking a link
-  const handleNavigation = (path) => {
-    navigate(path);
-    if (window.innerWidth < 768 && isSidebarOpen) {
-      dispatch(toggleSidebar());
+  const { isSidebarOpen } = useSelector((state) => state.analysis);
+  const user = useSelector(selectCurrentUser);
+  const { data: projectsData } = useGetProjectsQuery();
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Click outside to close profile modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileAreaRef.current &&
+        !profileAreaRef.current.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    setIsLoggingOut(true);
+    const logoutBackendUrl = `${import.meta.env.VITE_PATSERO_BACKEND_URL}/user-auth/logout`;
+    try {
+      await axios.post(logoutBackendUrl, {}, { withCredentials: true });
+    } catch (err) {
+      console.error("Logout error", err);
+    } finally {
+      dispatch(logOut());
+      setIsProfileOpen(false);
+      setIsLoggingOut(false);
+      navigate("/");
     }
-  };
+  }, [dispatch]);
+
+  const recentProjects = useMemo(
+    () => projectsData?.projects?.slice(0, 5) || [],
+    [projectsData],
+  );
 
   return (
     <>
-      {/* Mobile Floating Menu Button (Only visible on small screens when sidebar is closed) */}
-      {/* {!isSidebarOpen && (
-        <button
-          onClick={() => dispatch(toggleSidebar())}
-          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-[#0a0a0a] text-white rounded-md shadow-md focus:outline-none"
-        >
-          <Menu size={24} />
-        </button>
-      )} */}
-
-      {/* Backdrop overlay for mobile when sidebar is open */}
+      {/* Mobile Backdrop - Only shows when drawer is open on small screens */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-60 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] md:hidden transition-opacity"
           onClick={() => dispatch(toggleSidebar())}
         />
       )}
 
-      {/* Sidebar Content */}
       <aside
-        className={`fixed md:relative inset-y-0 left-0 z-50 bg-[#0a0a0a] text-white flex flex-col transform transition-all duration-300 ease-in-out border-r border-[#1a1a1a]
-          ${
-            isSidebarOpen
-              ? "w-[260px] translate-x-0"
-              : "w-[80px] -translate-x-full md:translate-x-0" // Hidden on mobile, Slim on desktop
-          }
+        className={`fixed md:relative inset-y-0 left-0 z-50 bg-[#0a0a0a] text-white flex flex-col transition-all duration-300 ease-in-out border-r border-white/5
+          ${isSidebarOpen ? "w-[280px] translate-x-0" : "w-[80px] -translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Header / Toggle Button */}
+        {/* LOGO HEADER */}
         <div
-          className={`pt-10 pb-8 flex items-center ${isSidebarOpen ? "px-8 justify-between" : "justify-center"}`}
+          className={`h-[90px] flex items-center shrink-0 ${isSidebarOpen ? "px-8 justify-between" : "justify-center"}`}
         >
           {isSidebarOpen && (
-            <h1 className="text-[32px] font-normal tracking-wide leading-none text-white whitespace-nowrap overflow-hidden">
-              Infringe
-            </h1>
+            <div className=" w-[130px]">
+              <img src={logo} alt="Logo" />
+            </div>
           )}
-
           <button
-            className="focus:outline-none text-gray-400 hover:text-white transition-colors"
             onClick={() => dispatch(toggleSidebar())}
+            className={`text-gray-500 hover:text-white transition-colors ${!isSidebarOpen ? "p-2" : ""}`}
           >
-            {/* Show 'X' on mobile when open, otherwise show the Panel toggle icon */}
-            {isSidebarOpen ? <X size={24} className="md:hidden" /> : null}
+            {isSidebarOpen ? <X size={20} className="md:hidden" /> : null}
             <PanelLeft
-              size={24}
+              size={22}
               className={`${isSidebarOpen ? "hidden md:block" : "block"}`}
             />
           </button>
         </div>
 
-        {/* Navigation Actions */}
-        <div className="flex flex-col w-full">
-          {/* New Analysis Link */}
-          <div
-            onClick={() => handleNavigation("/dashboard")}
-            className={`cursor-pointer transition-colors flex items-center overflow-hidden
-              ${
-                isSidebarOpen
-                  ? `px-8 py-4 ${location.pathname === "/dashboard" ? "bg-[#333333]" : "hover:bg-[#1a1a1a]"}`
-                  : "justify-center py-4"
-              }`}
-          >
-            {isSidebarOpen ? (
-              <span className="text-[15px] font-medium text-gray-100 whitespace-nowrap">
-                New Analysis
-              </span>
-            ) : (
-              <div
-                className={`p-2 rounded-xl transition-colors ${location.pathname === "/dashboard" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
-              >
-                <SquarePen size={22} />
-              </div>
-            )}
-          </div>
-
-          {/* My Project Link */}
-          <div
-            onClick={() => handleNavigation("/dashboard/projects")}
-            className={`cursor-pointer transition-colors flex items-center border-b border-[#222] overflow-hidden
-              ${
-                isSidebarOpen
-                  ? `px-8 py-4 justify-between ${location.pathname === "/dashboard/my-project" ? "bg-[#1a1a1a]" : "hover:bg-[#1a1a1a]"}`
-                  : "justify-center py-4"
-              }`}
-          >
-            {isSidebarOpen ? (
-              <>
-                <span className="text-[15px] text-gray-200 whitespace-nowrap">
-                  My Project
-                </span>
-                <span className="text-gray-400 text-sm font-light">
-                  <ChevronRight />
-                </span>
-              </>
-            ) : (
-              <div
-                className={`p-2 rounded-xl transition-colors ${location.pathname === "/dashboard/my-project" ? "bg-[#333333] text-white" : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"}`}
-              >
-                <FolderOpen size={22} />
-              </div>
-            )}
-          </div>
+        {/* PRIMARY NAVIGATION */}
+        <div className="flex flex-col w-full mt-4">
+          <NavItem
+            isActive={location.pathname === "/dashboard"}
+            isSidebarOpen={isSidebarOpen}
+            onClick={() => navigate("/dashboard")}
+            icon={<LayoutDashboard size={20} />}
+            label="New Analysis"
+          />
+          <NavItem
+            isActive={location.pathname.includes("projects")}
+            isSidebarOpen={isSidebarOpen}
+            onClick={() => navigate("/dashboard/projects")}
+            icon={<FolderOpen size={20} />}
+            label="My Projects"
+          />
         </div>
 
-        {/* History List (Only visible when expanded) */}
-        {isSidebarOpen ? (
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-8 mt-2">
-            {history.map((item, index) => (
-              <div
-                key={item.id}
-                className={`py-5 cursor-pointer group ${
-                  index !== history.length - 1
-                    ? "border-b border-[#222] border-dashed"
-                    : ""
-                }`}
-              >
-                <p className="text-[14px] text-gray-300 group-hover:text-white transition-colors mb-1 truncate">
-                  {item.title}
-                </p>
-                <div className="flex items-center gap-3 text-[12px] text-gray-400 font-light">
-                  <span>{item.type}</span>
-                  <span>{item.date}</span>
+        {/* COLLAPSIBLE HISTORY (Only visible when sidebar is expanded) */}
+        {isSidebarOpen && (
+          <div className="mt-8 flex-1 flex flex-col overflow-hidden animate-fade-in">
+            <div
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              className="px-8 flex items-center justify-between cursor-pointer group mb-4"
+            >
+              <h3 className="text-[10px] uppercase tracking-[2px] text-gray-500 font-extrabold group-hover:text-gray-300">
+                Recent Analysis
+              </h3>
+              <ChevronDown
+                size={14}
+                className={`text-gray-600 transition-transform ${isHistoryOpen ? "" : "-rotate-90"}`}
+              />
+            </div>
+            <div
+              className={`flex-1 overflow-y-auto hide-scrollbar transition-all duration-500 ${isHistoryOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            >
+              {recentProjects.map((item) => (
+                <div
+                  key={item._id}
+                  onClick={() => navigate(`/dashboard/report-view/${item._id}`)}
+                  className="px-8 py-5 cursor-pointer group hover:bg-white/[0.02] border-b border-white/[0.04]"
+                >
+                  <p className="text-[13px] font-bold text-gray-200 group-hover:text-white truncate mb-1">
+                    {item.patentId}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    <span className="text-[#ff6b00]/80">{item.mode}</span>
+                    <span className="opacity-30">•</span>
+                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="flex-1" /> // Fills the empty space when collapsed
+        )}
+        {!isSidebarOpen && <div className="flex-1" />}
+
+        {/* UPGRADE PLAN BANNER (Hides in slim mode) */}
+        {isSidebarOpen && (
+          <div className="mx-4 mb-6 p-3 bg-[#0e1117] border border-white/5 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-[#161b22] group animate-fade-in">
+            <div className="w-10 h-10 bg-[#ff6b00]/10 rounded-xl flex items-center justify-center shrink-0">
+              <Crown className="text-[#ff6b00]" size={20} />
+            </div>
+            <span className="text-[14px] font-bold text-gray-200 group-hover:text-white whitespace-nowrap">
+              Upgrade Your Plan
+            </span>
+          </div>
         )}
 
-        {/* User Profile */}
-        <div className="mt-auto relative">
-          {/* Invisible overlay to close modal when clicking outside */}
-          {isProfileMenuOpen && (
+        {/* PROFILE SECTION (Ref based for click-outside) */}
+        <div
+          className={`relative border-t border-white/5 py-3 bg-[#0a0a0a] z-[70] ${isSidebarOpen ? "px-4" : "px-0"}`}
+          ref={profileAreaRef}
+        >
+          {isProfileOpen && (
             <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsProfileMenuOpen(false)}
-            />
-          )}
-
-          {/* Google-Style Profile Modal */}
-          {isProfileMenuOpen && (
-            <div className="absolute bottom-[calc(100%+8px)] left-4 w-[230px] bg-black rounded-md shadow-xl border border-gray-200 z-50 flex flex-col items-center pt-6 pb-2 text-gray-800 cursor-default">
-              {/* Large Avatar */}
-              <div className="w-16 h-16 rounded-full bg-[#00897b] flex items-center justify-center text-white text-3xl font-normal mb-3 uppercase">
-                U
-              </div>
-
-              {/* User Info */}
-              <div className="text-[15px] text-white font-semibold mb-0.5">
-                developer altbig
-              </div>
-              <div className="text-[13px] text-gray-400 mb-5">
-                user@gmail.com
-              </div>
-
-              <div className="w-full border-t border-gray-200"></div>
-
-              {/* Sign Out Button */}
-              <button className="w-full py-3.5 text-[14px] font-medium text-gray-400 hover:bg-gray-50 hover:text-black transition-colors">
-                Sign out
-              </button>
-
-              <div className="w-full border-t border-gray-200"></div>
-
-              {/* Footer Links */}
-              <div className="w-full pt-3 pb-1 flex justify-center items-center gap-2 text-[12px] text-gray-500">
-                <span className="hover:text-gray-800 cursor-pointer hover:underline">
-                  Privacy Policy
-                </span>
-                <span>•</span>
-                <span className="hover:text-gray-800 cursor-pointer hover:underline">
-                  Terms of Service
-                </span>
-              </div>
+              className={`absolute bottom-full left-4 mb-4 animate-scale-up`}
+            >
+              <UserProfileDropdown
+                user={user}
+                onLogout={handleSignOut}
+                isLoggingOut={isLoggingOut}
+              />
             </div>
           )}
-
-          {/* Clickable Profile Button (Your existing code modified slightly) */}
           <div
-            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className={`flex items-center transition-colors border-t border-[#111] cursor-pointer hover:bg-[#1a1a1a] overflow-hidden
-          ${isSidebarOpen ? "px-4 py-4 gap-2" : "justify-center py-6"}
-        `}
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className={`flex items-center gap-3 p-2 rounded-2xl cursor-pointer hover:bg-white/5 transition-all ${!isSidebarOpen ? "justify-center" : ""}`}
           >
-            <span className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center border border-gray-700 bg-gray-800 text-gray-200 font-medium text-sm uppercase">
-              U
-            </span>
-
+            <div className="w-11 h-11 rounded-full bg-[#f47b20] border-2 border-[#1a1a1a] flex items-center justify-center text-white font-bold text-lg uppercase shadow-lg shrink-0">
+              {user?.name?.charAt(0) || "U"}
+            </div>
             {isSidebarOpen && (
-              <span className="text-gray-300 text-[15px] flex items-center gap-2 whitespace-nowrap">
-                User{" "}
-                <span className="text-gray-500 text-sm">
-                  <ChevronRight size={16} />
-                </span>
-              </span>
+              <>
+                <div className="flex-1 min-w-0 animate-fade-in">
+                  <p className="text-[15px] font-bold text-white truncate">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-[12px] text-gray-500 font-medium">
+                    Free Plan
+                  </p>
+                </div>
+                {isProfileOpen ? (
+                  <ChevronDown size={16} className="text-gray-500" />
+                ) : (
+                  <ChevronUp size={16} className="text-gray-500" />
+                )}
+              </>
             )}
           </div>
         </div>
@@ -233,4 +224,20 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+const NavItem = ({ isActive, isSidebarOpen, onClick, icon, label }) => (
+  <div
+    onClick={onClick}
+    className={`flex items-center h-[56px] cursor-pointer transition-all 
+      ${isActive ? "bg-[#1c2431] text-white border-l-4 border-[#ff6b00]" : "text-gray-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent"} 
+      ${!isSidebarOpen ? "justify-center px-0 w-12 mx-auto" : "px-8"}`}
+  >
+    <div className={isActive ? "text-[#ff6b00]" : "text-gray-400"}>{icon}</div>
+    {isSidebarOpen && (
+      <span className="ml-4 text-[14px] font-bold tracking-tight animate-fade-in">
+        {label}
+      </span>
+    )}
+  </div>
+);
+
+export default React.memo(Sidebar);

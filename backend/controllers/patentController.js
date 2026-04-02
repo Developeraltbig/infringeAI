@@ -31,7 +31,15 @@ export const quickAnalyze = async (req, res) => {
       return res.status(400).json({ error: "patent_id is required" });
 
     // Securely get userId from your auth middleware
-    const userId = req.user?._id || req.auth?.userId;
+    const userId = req.user?.user?._id || req.user?._id;
+
+    console.log("Extracted User ID:", userId);
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ error: "User ID missing. Please log in again." });
+    }
 
     // 1. Create the Project record in MongoDB
     const project = new Project({
@@ -72,6 +80,8 @@ export const bulkQuickAnalyze = async (req, res) => {
   try {
     const { patent_ids } = req.body;
 
+    c;
+
     if (!Array.isArray(patent_ids) || patent_ids.length === 0) {
       return res.status(400).json({ error: "patent_ids array is required" });
     }
@@ -82,7 +92,7 @@ export const bulkQuickAnalyze = async (req, res) => {
         .json({ error: "Maximum 10 patents allowed per bulk analysis" });
     }
 
-    const userId = req.user?._id || req.auth?.userId;
+    const userId = req.user?._id;
     const bulkGroupId = uuidv4();
     const jobsToQueue = [];
     const createdProjectIds = [];
