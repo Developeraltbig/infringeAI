@@ -11,19 +11,19 @@
 
 import express from "express";
 import analysisController from "../controllers/analysisController.js";
-import authMiddleware from "../middleware/auth.js";
+import verifyUserToken from "../middleware/verifyToken.middleware.js";
 
 const router = express.Router();
 
-router.post("/pcr", authMiddleware, analysisController.generatePCR);
+router.post("/pcr", verifyUserToken, analysisController.generatePCR);
 router.post(
   "/target-companies",
-  authMiddleware,
+  verifyUserToken,
   analysisController.generateTargetCompanies,
 );
 router.post(
   "/prelim-analysis",
-  authMiddleware,
+  verifyUserToken,
   analysisController.generatePrelimAnalysis,
 );
 

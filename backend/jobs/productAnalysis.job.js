@@ -18,6 +18,7 @@ export const executeProductAnalysis = async (
 
   // 1. Fetch project and validate
   const project = await Project.findById(projectId);
+
   if (!project) throw new Error("Project not found");
 
   const patentData = project.patentData;
@@ -146,8 +147,12 @@ export const executeProductAnalysis = async (
     // ==========================================
     // STEP 5: Check for Project Completion
     // ==========================================
+    // const updatedProject = await Project.findById(projectId);
+    // const expected = updatedProject.quickModeProducts.length || 5;
+    // const actual = updatedProject.results.finalClaimChart.length;
+
     const updatedProject = await Project.findById(projectId);
-    const expected = updatedProject.quickModeProducts.length || 5;
+    const expected = updatedProject.getExpectedProductCount(); // 💡 Uses your schema method
     const actual = updatedProject.results.finalClaimChart.length;
 
     console.log(

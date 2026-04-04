@@ -492,8 +492,6 @@ FULL DESCRIPTION (SPECIFICATION):
 ${fullDescription}
 
 ---
-INSTRUCTIONS:
-${this.pcrPrompt}
 `,
 
   targetCompanyPrompt: (firstClaim, pcrResult, biblioData) => `
@@ -533,8 +531,6 @@ PATENT CLAIM READING (PCR):
 ${JSON.stringify(pcrResult, null, 2)} 
 
 ---
-INSTRUCTIONS:
-${this.targetCompanyPrompt}
 `,
 
   prelimAnalysisPrompt: (firstClaim, pcrResult) => `
@@ -548,8 +544,6 @@ PATENT CLAIM READING (PCR):
 ${JSON.stringify(pcrResult, null, 2)} 
 
 ---
-INSTRUCTIONS:
-${this.prelimAnalysisPrompt}
 `,
 
   infringementStorylinePrompt: (productName, patentData) => `

@@ -28,6 +28,16 @@ export const patentApiSlice = apiSlice.injectEndpoints({
           : 3000,
     }),
 
+    // Add this inside your patentApiSlice.js endpoints:
+    startBulkAnalysis: builder.mutation({
+      query: (patentIds) => ({
+        url: "/patents/bulk-quick-analyze",
+        method: "POST",
+        body: { patent_ids: patentIds },
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+
     // 4. Get final report details
     getProjectDetails: builder.query({
       query: (id) => `/projects/details/${id}`,
@@ -37,6 +47,7 @@ export const patentApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useStartQuickAnalysisMutation,
+  useStartBlukAnalysisMutation,
   useGetProjectsQuery,
   useGetProjectStatusQuery,
   useGetProjectDetailsQuery,
