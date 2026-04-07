@@ -221,6 +221,7 @@ export const executeQuickAnalysis = async (job, projectId, patentId) => {
         projectId,
         patentId,
         productName: prod.product,
+        companyName: prod.company,
         type: "product-analysis",
       });
     }

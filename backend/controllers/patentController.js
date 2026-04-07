@@ -1,6 +1,7 @@
 import Project from "../models/Project.js";
 import { analysisQueue } from "../config/queue.config.js";
 import { v4 as uuidv4 } from "uuid";
+import { parsePatentFile } from "../utils/fileParser.util.js";
 
 /**
  * Utility to fetch data directly (Non-background)
@@ -143,5 +144,74 @@ export const bulkQuickAnalyze = async (req, res) => {
   } catch (error) {
     console.error("Bulk quick analysis error:", error);
     res.status(500).json({ error: "Failed to start bulk analysis" });
+  }
+};
+
+export const bulkAnalyzeFromFile = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const userId = req.user?.user?._id || req.user?._id;
+
+    // 1. Parse raw IDs from file
+    const rawIds = await parsePatentFile(
+      req.file.buffer,
+      req.file.originalname,
+    );
+
+    if (rawIds.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "No valid Patent IDs found in the file." });
+    }
+
+    const bulkGroupId = uuidv4();
+    const createdProjectIds = [];
+    const jobsToQueue = [];
+
+    // 2. Normalize and Queue
+    for (const id of rawIds) {
+      // 🟢 FIX: Normalize the ID for Google Patents format
+      let normalizedId = id.trim().toUpperCase();
+      if (!normalizedId.startsWith("patent/"))
+        normalizedId = `patent/${normalizedId}`;
+      if (!normalizedId.endsWith("/en")) normalizedId = `${normalizedId}/en`;
+
+      // Create Database entry with the CORRECT format
+      const project = new Project({
+        userId,
+        patentId: normalizedId,
+        mode: "bulk",
+        bulkGroupId,
+        status: "processing",
+        progress: 5,
+      });
+
+      await project.save();
+      createdProjectIds.push(project._id);
+
+      // Add to Queue with the CORRECT format
+      jobsToQueue.push({
+        name: "quick-analysis",
+        data: {
+          projectId: project._id,
+          patentId: normalizedId, // 👈 Worker will now get the correct URL
+          type: "quick-analysis",
+        },
+      });
+    }
+
+    // 3. Batch push to Redis
+    await analysisQueue.addBulk(jobsToQueue);
+
+    res.status(202).json({
+      success: true,
+      message: `File processed. ${rawIds.length} patents queued with normalization.`,
+      bulkGroupId,
+      projectIds: createdProjectIds,
+    });
+  } catch (error) {
+    console.error("Bulk Upload Error:", error);
+    res.status(500).json({ error: "Failed to process bulk upload." });
   }
 };

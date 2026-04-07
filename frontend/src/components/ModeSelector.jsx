@@ -6,6 +6,8 @@ const ModeSelector = memo(() => {
   const dispatch = useDispatch();
   const mode = useSelector((state) => state.analysis.mode);
 
+  console.log(mode);
+
   const handleModeChange = useCallback(
     (id) => {
       dispatch(setMode(id));
@@ -21,7 +23,7 @@ const ModeSelector = memo(() => {
 
   return (
     <div className="flex justify-center mb-10">
-      <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex space-x-1">
+      <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-300 flex space-x-1">
         {modes.map((m) => (
           <button
             key={m.id}

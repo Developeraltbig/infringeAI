@@ -6,20 +6,33 @@ import { safeJsonParse } from "../utils/safeJsonParser.js";
 
 /**
  * Executes deep analysis for a single specific product.
- * This runs in parallel for each product in the top 5 list.
+ * Supports: Quick, Bulk, and Interactive modes.
  */
 export const executeProductAnalysis = async (
   job,
   projectId,
   patentId,
   productName,
+  companyName,
 ) => {
   console.log(`[Job ${job.id}] 🚀 Deep Analysis started for: ${productName}`);
 
   // 1. Fetch project and validate
   const project = await Project.findById(projectId);
-
   if (!project) throw new Error("Project not found");
+
+  //  IDEMPOTENCY CHECK: If this product name is already in the results, stop here.
+  // This prevents the "6/5 products" error if a job retries.
+  const isAlreadyDone = project.results?.finalClaimChart?.some(
+    (chart) => chart.productName === productName,
+  );
+
+  if (isAlreadyDone) {
+    console.log(
+      `[Job ${job.id}] Product ${productName} already exists. Skipping analysis.`,
+    );
+    return { success: true, skipped: true };
+  }
 
   const patentData = project.patentData;
 
@@ -78,11 +91,12 @@ export const executeProductAnalysis = async (
 
     // Search the top 2 most relevant queries
     for (const query of queries.slice(0, 2)) {
-      const results = await exaService.searchWithHighlights(
-        `${productName} ${query}`,
-      );
+      const searchQuery = `${companyName || ""} ${productName} ${query}`.trim();
+
+      const results = await exaService.searchWithHighlights(searchQuery);
       allSearchResults.push(...results);
     }
+
     const uniqueResults = exaService.deduplicateResults(allSearchResults);
 
     // AI Link Filter: Pick top 5 most relevant URLs
@@ -114,7 +128,9 @@ export const executeProductAnalysis = async (
     // ==========================================
     // STEP 4: Final Claim Chart Generation
     // ==========================================
-    console.log(`[Job ${job.id}] Step 4: Building final claim chart...`);
+    console.log(
+      `[Job ${job.id}] Step 4: Building final claim chart for ${productName}...`,
+    );
 
     const contextText = webContent
       .map((c) => `Source URL: ${c.url}\nTitle: ${c.title}\nContent: ${c.text}`)
@@ -145,31 +161,41 @@ export const executeProductAnalysis = async (
     });
 
     // ==========================================
-    // STEP 5: Check for Project Completion
+    // STEP 5: Mode-Aware Completion Logic
     // ==========================================
-    // const updatedProject = await Project.findById(projectId);
-    // const expected = updatedProject.quickModeProducts.length || 5;
-    // const actual = updatedProject.results.finalClaimChart.length;
-
     const updatedProject = await Project.findById(projectId);
-    const expected = updatedProject.getExpectedProductCount(); // 💡 Uses your schema method
-    const actual = updatedProject.results.finalClaimChart.length;
+
+    // 🟢 IDEMPOTENCY: Count UNIQUE product names only
+    const uniqueFinishedProducts = new Set(
+      updatedProject.results?.finalClaimChart?.map((c) => c.productName),
+    );
+    const actualCount = uniqueFinishedProducts.size;
+
+    // Determine expected count based on mode
+    let expectedCount =
+      updatedProject.mode === "interactive"
+        ? updatedProject.selectedCompanies?.length || 0
+        : updatedProject.quickModeProducts?.length || 5;
 
     console.log(
-      `[Job ${job.id}] Progress: ${actual}/${expected} products complete.`,
+      `[Job ${job.id}] Unique Progress: ${actualCount}/${expectedCount}`,
     );
 
-    if (actual >= expected) {
-      await Project.findByIdAndUpdate(projectId, {
-        status: "completed",
-        currentStep: "completed",
-        progress: 100,
-        completedAt: new Date(),
-      });
-      console.log(`🏁🏁 Project ${projectId} is officially COMPLETE!`);
+    if (actualCount >= expectedCount && expectedCount > 0) {
+      // 🟢 ATOMIC UPDATE: Only mark completed if not already completed
+      await Project.findOneAndUpdate(
+        { _id: projectId, status: { $ne: "completed" } },
+        {
+          $set: {
+            status: "completed",
+            currentStep: "completed",
+            progress: 100,
+            completedAt: new Date(),
+          },
+        },
+      );
     } else {
-      // Update overall project percentage based on how many products are done
-      const totalProgress = Math.floor(60 + (actual / expected) * 40);
+      const totalProgress = Math.floor(60 + (actualCount / expectedCount) * 40);
       await Project.findByIdAndUpdate(projectId, { progress: totalProgress });
     }
 
@@ -177,6 +203,6 @@ export const executeProductAnalysis = async (
     return { success: true, productName };
   } catch (error) {
     console.error(`[Job ${job.id}] ❌ Product Analysis Failed:`, error.message);
-    throw error; // Let BullMQ retry
+    throw error; // BullMQ handles the retry
   }
 };

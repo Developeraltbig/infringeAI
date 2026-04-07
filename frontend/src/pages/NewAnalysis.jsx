@@ -1,22 +1,12 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import Stepper from "../components/Stepper"; // Import the Stepper
-import ModeSelector from "../components/ModeSelector";
-import SearchArea from "../components/SearchArea";
+import React, { Suspense, lazy, memo } from "react";
 
-const NewAnalysis = () => {
-  // Get the current mode from Redux
-  const mode = useSelector((state) => state.analysis.mode);
+// 🚀 Optimization: Lazy Load the heavy search component
+const SearchArea = lazy(() => import("../components/SearchArea"));
+const ModeSelector = lazy(() => import("../components/ModeSelector"));
 
+const NewAnalysis = memo(() => {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col items-center mt-8 animate-fade-in-up">
-      {/* Conditionally show Stepper ONLY in interactive mode */}
-      {/* {mode === 'interactive' && (
-        <div className="w-full max-w-5xl mb-8">
-          <Stepper />
-        </div>
-      )} */}
-
       <div className="text-center mb-12">
         <h2 className="text-4xl md:text-5xl font-bold text-[#111] mb-4">
           Patent Infringement <span className="text-[#ff6b00]">Analysis</span>
@@ -27,9 +17,16 @@ const NewAnalysis = () => {
       </div>
 
       <ModeSelector />
-      <SearchArea />
+
+      <Suspense
+        fallback={
+          <div className="h-20 w-full animate-pulse bg-gray-100 rounded-3xl" />
+        }
+      >
+        <SearchArea />
+      </Suspense>
     </div>
   );
-};
+});
 
 export default NewAnalysis;

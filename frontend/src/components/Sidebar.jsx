@@ -21,8 +21,8 @@ import {
 import logo from "../assets/whiteLogo.png";
 import { toggleSidebar } from "../features/slice/analysisSlice";
 import { selectCurrentUser, logOut } from "../features/auth/authSlice";
-import { useGetProjectsQuery } from "../features/api/patentApiSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
+import { useGetProjectsQuery } from "../features/api/projectApiSlice";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -60,7 +60,7 @@ const Sidebar = () => {
     } catch (err) {
       console.error("Logout error", err);
     } finally {
-      dispatch(logOut());
+      // dispatch(logOut());
       setIsProfileOpen(false);
       setIsLoggingOut(false);
       navigate("/");
@@ -68,7 +68,7 @@ const Sidebar = () => {
   }, [dispatch]);
 
   const recentProjects = useMemo(
-    () => projectsData?.projects?.slice(0, 5) || [],
+    () => projectsData?.projects || [],
     [projectsData],
   );
 
