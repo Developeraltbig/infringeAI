@@ -143,6 +143,11 @@ export const executeProductAnalysis = async (
       topUrls,
     );
 
+    const manualUrlMapping = {};
+    topUrls.forEach((url, index) => {
+      manualUrlMapping[index + 1] = url; // Creates { "1": "http...", "2": "http..." }
+    });
+
     const finalResponse = await aiService.generateResponse(finalChartPrompt);
     const finalData = safeJsonParse(finalResponse, {
       fallbackValue: { claimChart: [], infringementScore: "Medium" },
@@ -152,7 +157,7 @@ export const executeProductAnalysis = async (
       productName,
       claimChart: finalData.claimChart,
       infringementScore: finalData.infringementScore,
-      urlMapping: finalData.urlMapping || {},
+      urlMapping: manualUrlMapping,
     };
 
     // Push the final result to the array

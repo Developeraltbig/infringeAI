@@ -118,6 +118,7 @@ const projectSchema = new mongoose.Schema(
           productName: String,
           claimChart: mongoose.Schema.Types.Mixed,
           infringementScore: String,
+          urlMapping: mongoose.Schema.Types.Mixed,
         },
       ],
     },

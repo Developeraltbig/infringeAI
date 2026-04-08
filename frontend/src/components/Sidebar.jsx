@@ -67,10 +67,22 @@ const Sidebar = () => {
     }
   }, [dispatch]);
 
-  const recentProjects = useMemo(
-    () => projectsData?.projects || [],
-    [projectsData],
-  );
+  // 💡 Optimized Memoization with Regex cleaning
+  const recentProjects = useMemo(() => {
+    if (!projectsData?.projects) return [];
+
+    // Map through projects and create a "cleaned" version of each item
+    return projectsData.projects
+      .map((item) => ({
+        ...item,
+        // 1. Regex to remove 'patent/' and '/en'
+        displayId: item.patentId?.replace(/^patent\/|\/en$/gi, "") || "N/A",
+
+        // 2. Regex to remove time (T00:00:00...) or format via standard JS
+        displayDate: item.createdAt?.replace(/T.*/, "") || "N/A",
+      }))
+      .slice(0, 5); // Still taking only the last 5 for the sidebar
+  }, [projectsData]);
 
   return (
     <>
@@ -150,13 +162,16 @@ const Sidebar = () => {
                   onClick={() => navigate(`/dashboard/report-view/${item._id}`)}
                   className="px-8 py-5 cursor-pointer group hover:bg-white/[0.02] border-b border-white/[0.04]"
                 >
-                  <p className="text-[13px] font-bold text-gray-200 group-hover:text-white truncate mb-1">
-                    {item.patentId}
+                  {/* 🟢 Use displayId instead of patentId */}
+                  <p className="text-[14px] font-bold text-gray-100 group-hover:text-[#ff6b00] truncate mb-1">
+                    {item.displayId}
                   </p>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase">
                     <span className="text-[#ff6b00]/80">{item.mode}</span>
                     <span className="opacity-30">•</span>
-                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                    {/* 🟢 Use displayDate instead of createdAt */}
+                    <span>{item.displayDate}</span>
                   </div>
                 </div>
               ))}

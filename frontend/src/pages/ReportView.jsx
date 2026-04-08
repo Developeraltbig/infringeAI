@@ -1,287 +1,276 @@
-import React, { useMemo, useState } from "react";
-import { ChevronDown, Check, X, Navigation } from "lucide-react";
-import { useGetProjectDetailsQuery } from "../features/api/patentApiSlice";
-
-// --- Custom Orange Document Icon SVG ---
-const DocIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="#ff6b00"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" />
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M14 2V8H20L14 2Z"
-      fill="#e66000"
-    />
-  </svg>
-);
-
-// --- Mock Data ---
-const reportData = {
-  header: {
-    patentId: "US6324534B1",
-    company: "Alphabet Inc",
-    product: "Vertex AI Search",
-  },
-  tabs: [
-    { id: 1, label: "ALPHABET INC:Vertex AI Search", active: true },
-    { id: 2, label: "AMAZON.COM, INC.Amazon Product Search", active: false },
-    {
-      id: 3,
-      label: "MICROSOFT CORPORATIONMicrosoft SharePoint Search",
-      active: false,
-    },
-  ],
-  // NEW: Mock data for the collapsible section
-  otherProducts: [
-    {
-      id: 1,
-      title: "Specification Explanation",
-      description:
-        "Google Cloud Search Potentially Infringes By Designating A Plurality Of Subsets Via Its Configurable Data Sources (E.G., Drive, Third-Party Apps) And Inputting A Search String Through Its Search UI. However, Infringement Is Unlikely As The Platform Probably Lacks The Claimed Search Hierarchy That Terminat[Es] Upon Finding A Match. Instead, It Likely Uses Parallel Federated Search Across Sources, As Seen In Systems That Search Multiple Https://Www.Elastic.Co/Docs/Manage-Data/Data-Store/Aliases. [Low]",
-    },
-    {
-      id: 2,
-      title: "Google Shopping",
-      description:
-        "Google Shopping Potentially Infringes By Designating Subsets Of Data. Such As Its Product **Indices** And Merchant **Feeds**, And Forming A Search Hierarchy By First Querying Product Titles (First Strategy) Then Descriptions (Second Strategy). A User's Search String Executes This Process. However, The Element Of Terminating Said Search Hierarchy Upon Finding Said At Least One Match Is Likely Not Present, As Google Provides Comprehensive Results, Not Just The First Match Found. Https://Www.Elastic.Co/Guide/En/Elasticsearch/Reference/Current/Searchmultiple-Indices.Html [High]",
-    },
-  ],
-  claimElements: [
-    {
-      id: 1,
-      claimText:
-        "designating a plurality of subsets of data records in a database;",
-      analysis:
-        "Vertex AI Search Allows A User To Create Multiple 'data Stores' Which Function As Designated Subsets Of Data. A Single Search 'app' Can Be Connected To Multiple Data Stores, Enabling What The Documentation Calls 'blended Search'. Each Data Store Can Contain Different Types Of Data (E.G., Website, Structured, Unstructured), Effectively Creating Distinct Subsets Within The Overall Database Accessible To An Application.",
-      evidence:
-        "The Product Documentation States, 'Custom Search Apps Have A Many-To-Many Relationship With Data Stores. When Multiple Data Stores Are Connected To A Single Custom Search App, This Is Referred To As _blended Search_.' (Source 3). This Explicitly Confirms The Ability To Designate And Use A Plurality Of Data Subsets (Data Stores) Within A Single Application Context.",
-      status: "Found",
-      sources: [{ name: "Source 3:", url: "Https://Cloud.Google.Com/" }],
-    },
-    {
-      id: 2,
-      claimText:
-        "designating at least a first and a second search strategy, wherein each search strategy comprises a search methodology preselected to operate upon at least one of the plurality of subsets to search for at least one match;",
-      analysis:
-        "A User Can Designate Different Search Strategies By Configuring Each Data Store (Subset) With A Unique Search Methodology. This Methodology Is Defined By Settings Such As Which Fields Are 'Indexable' Or 'Searchable' (Source 6), And By Applying Specific Filtering And Boosting Rules (Source 7). For Example, A First Strategy Could Be An API Call To A Data Store With Specific Boosting Rules, And A Second Strategy Could Be An API Call To A Different Data Store With Different Filtering Applied. The Methodology Is 'preselected' When The Data Store Is Configured.",
-      evidence:
-        "Vertex AI Search Allows Configuration Of Fields As 'Indexable' And 'Searchable' To Control Recall (Source 6). Furthermore, It 'provides A Flexible Filter Expression Syntax To Meet These Filtering And Boosting Requirements' (Source 7). A Feature Request Also Mentions The Underlying API Supports 'boost_spec' To 'influence Search Results' (Source 8). By Configuring Two Different Data Stores With Unique Settings, A User Designates Two Distinct Search Strategies.",
-      status: "Found",
-      sources: [
-        { name: "Source 6:", url: "Https://Cloud.Google.Com/" },
-        { name: "Source 7:", url: "Https://Cloud.Google.Com/" },
-        { name: "Source 8:", url: "Https://Github.Com/" },
-      ],
-    },
-  ],
-};
+import React, { useState, useMemo, memo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useGetProjectDetailsQuery } from "../features/api/projectApiSlice";
+import {
+  ChevronDown,
+  Check,
+  X,
+  Navigation,
+  FileText,
+  Building2,
+  Box,
+  AlertTriangle,
+  ArrowLeft,
+  RefreshCw,
+} from "lucide-react";
 
 const ReportView = () => {
-  // NEW: State to manage the open/closed status of the accordion
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [activeChartIdx, setActiveChartIdx] = useState(0);
   const [isOtherProductsOpen, setIsOtherProductsOpen] = useState(false);
 
-  return (
-    <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-4 p-4 animate-fade-in pb-20">
-      {/* 1. Top Header Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-xl font-bold text-gray-900">
-          Patent Infringement Claim Chart
-        </h1>
+  // 1. Fetch Real Data
+  const { data, isLoading, isError } = useGetProjectDetailsQuery(id);
+  const project = data?.project;
 
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-            <DocIcon /> {reportData.header.patentId}
+  // 2. Logic: Determine if project failed
+  const isFailed = useMemo(() => {
+    if (!project) return false;
+    // Project failed if status is 'failed' OR if it's 'completed' but has no results
+    return (
+      project.status === "failed" ||
+      (project.status === "completed" &&
+        (!project.results?.finalClaimChart ||
+          project.results.finalClaimChart.length === 0))
+    );
+  }, [project]);
+
+  // 3. Memoize current active result set
+  const activeResult = useMemo(() => {
+    return project?.results?.finalClaimChart?.[activeChartIdx] || null;
+  }, [project, activeChartIdx]);
+
+  // 4. Derived Stats
+  const stats = useMemo(() => {
+    if (!activeResult) return { found: 0, notFound: 0, unknown: 0 };
+    const chart = activeResult.claimChart || [];
+    return {
+      found: chart.filter((c) => c.identified === "Found").length,
+      notFound: chart.filter((c) => c.identified === "Not Found").length,
+      unknown: chart.filter((c) => c.identified === "Unknown").length,
+    };
+  }, [activeResult]);
+
+  // 🟢 RENDER: LOADING STATE
+  if (isLoading)
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#faf9f6]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-t-[#ff6b00] border-gray-200 rounded-full animate-spin"></div>
+          <span className="text-gray-400 font-bold tracking-widest text-xs uppercase">
+            Loading Analysis...
+          </span>
+        </div>
+      </div>
+    );
+
+  // 🟢 RENDER: FAILURE STATE (Matches your request)
+  if (isFailed || isError || !project) {
+    return (
+      <div className="h-[90vh] w-full flex items-center justify-center bg-[#faf9f6] p-6 overflow-auto">
+        <div className="bg-white rounded-[10px]  border border-gray-100 p-12 md:p-20 max-w-2xl w-full flex flex-col items-center text-center animate-scale-up">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-8">
+            <AlertTriangle size={40} className="text-red-500" />
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-            <DocIcon /> {reportData.header.company}
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-            <DocIcon /> {reportData.header.product}
+          <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tighter">
+            Analysis <span className="text-red-500">Failed</span>
+          </h2>
+          <p className="text-gray-500 mb-10 leading-relaxed font-medium">
+            We're sorry, but we encountered an error while generating your
+            patent infringement analysis.
+            {project?.failureReason && (
+              <span className="block mt-2 text-red-400 italic">
+                Reason: {project.failureReason}
+              </span>
+            )}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-bold transition-all"
+            >
+              <ArrowLeft size={18} /> Dashboard
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b00] hover:bg-orange-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-orange-200 transition-all"
+            >
+              <RefreshCw size={18} /> Retry Load
+            </button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* 2. Target Selection Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-3 overflow-x-auto hide-scrollbar">
-        {reportData.tabs.map((tab) => (
+  // 🟢 RENDER: SUCCESS STATE (Existing UI)
+  return (
+    <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-5 p-6 animate-fade-in font-sans pb-20">
+      {/* 1. Header Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-xl font-bold text-gray-800">
+          Patent Infringement Claim Chart
+        </h1>
+        <div className="flex flex-wrap items-center gap-6">
+          <HeaderTag
+            icon={<FileText size={16} />}
+            label={project.patentId.replace(/^patent\/|\/en$/gi, "")}
+          />
+          <HeaderTag
+            icon={<Building2 size={16} />}
+            label={activeResult?.company || "N/A"}
+          />
+          <HeaderTag
+            icon={<Box size={16} />}
+            label={activeResult?.productName}
+          />
+        </div>
+      </div>
+
+      {/* 2. Selection Tabs */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3 overflow-x-auto hide-scrollbar">
+        {project.results.finalClaimChart.map((chart, idx) => (
           <div
-            key={tab.id}
-            className={`flex items-center gap-3 px-5 py-2.5 rounded-full border whitespace-nowrap cursor-pointer transition-colors text-[11px] font-semibold tracking-wider uppercase ${
-              tab.active
-                ? "bg-[#fff5eb] border-[#ff6b00] text-gray-800"
-                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+            key={idx}
+            onClick={() => setActiveChartIdx(idx)}
+            className={`flex items-center gap-3 px-5 py-2.5 rounded-full border whitespace-nowrap cursor-pointer transition-all text-[11px] font-bold tracking-wider uppercase ${
+              activeChartIdx === idx
+                ? "bg-orange-50 border-[#ff6b00] text-gray-800"
+                : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
             }`}
           >
-            {tab.label}
+            {chart.productName}
             <div
-              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                tab.active ? "bg-orange-100" : "bg-red-50"
-              }`}
+              className={`w-4 h-4 rounded-full flex items-center justify-center ${activeChartIdx === idx ? "bg-orange-100 text-[#ff6b00]" : "bg-gray-50 text-gray-300"}`}
             >
-              {tab.active ? (
-                <Check size={10} className="text-[#ff6b00]" strokeWidth={4} />
+              {activeChartIdx === idx ? (
+                <Check size={10} strokeWidth={4} />
               ) : (
-                <X size={10} className="text-red-500" strokeWidth={4} />
+                <X size={10} strokeWidth={4} />
               )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* 3. Collapsible Accordion Container */}
-      <div className="flex flex-col shadow-sm rounded-xl border border-gray-100">
-        {/* Accordion Header (Clickable) */}
-        <div
-          onClick={() => setIsOtherProductsOpen(!isOtherProductsOpen)}
-          className={`bg-white p-5 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors ${
-            isOtherProductsOpen
-              ? "rounded-t-xl border-b border-gray-100"
-              : "rounded-xl"
-          }`}
-        >
-          <h3 className="text-[15px] font-bold text-gray-900">
-            Other Alphabet Inc. Products Analysed (
-            {reportData.otherProducts.length})
-          </h3>
-          <ChevronDown
-            size={20}
-            className={`text-gray-900 transition-transform duration-300 ${isOtherProductsOpen ? "rotate-180" : ""}`}
-            strokeWidth={2.5}
-          />
-        </div>
-
-        {/* Accordion Expanded Body */}
-        {isOtherProductsOpen && (
-          <div className="bg-[#fcfcfc] rounded-b-xl flex flex-col divide-y divide-gray-100/50">
-            {reportData.otherProducts.map((product) => (
-              <div key={product.id} className="p-6 md:p-8 flex flex-col gap-3">
-                {/* Stylized Number */}
-                <span
-                  className="text-3xl font-light text-[#ffb076] leading-none select-none mb-1"
-                  style={{ fontFamily: "serif" }}
-                >
-                  {product.id}
-                </span>
-
-                {/* Title */}
-                <h4 className="text-[14px] font-bold text-gray-900">
-                  {product.title}
-                </h4>
-
-                {/* Description */}
-                <p className="text-[13.5px] text-gray-500 leading-relaxed mb-1">
-                  {product.description}
-                </p>
-
-                {/* Link */}
-                <button className="text-[13.5px] font-bold text-gray-900 text-left hover:underline w-fit">
-                  View Product Details
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 4. Main Claim Chart Container */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col mt-2">
-        {/* Chart Header (Orange) */}
-        <div className="bg-[#ff6b00] px-6 py-4 flex justify-between items-center">
-          <h2 className="text-white text-lg font-medium tracking-wide">
-            Vertex AI Search
+      {/* 3. Main Chart */}
+      <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col">
+        <div className="bg-[#ff6b00] px-8 py-5 flex justify-between items-center text-white">
+          <h2 className="text-lg font-bold tracking-tight">
+            {activeResult?.productName}
           </h2>
-          <div className="border border-white/30 px-4 py-1.5 rounded text-white text-sm font-medium">
-            High Likelihood
+          <div className="bg-white/20 px-4 py-1.5 rounded-lg text-sm font-bold backdrop-blur-md border border-white/10">
+            {activeResult?.infringementScore === "H"
+              ? "High Likelihood"
+              : "Moderate Likelihood"}
           </div>
         </div>
 
-        {/* Chart Body (Rows) */}
-        <div className="flex flex-col p-6 gap-6 bg-[#fafbfc]">
-          {reportData.claimElements.map((row, index) => (
+        <div className="flex flex-col p-8 gap-10 bg-[#fafbfc]">
+          {activeResult?.claimChart?.map((row, index) => (
             <div
-              key={row.id}
-              className={`grid grid-cols-1 lg:grid-cols-12 gap-8 pb-8 ${
-                index !== reportData.claimElements.length - 1
-                  ? "border-b border-gray-200/60"
-                  : ""
-              }`}
+              key={index}
+              className={`grid grid-cols-1 lg:grid-cols-12 gap-10 pb-10 ${index !== activeResult.claimChart.length - 1 ? "border-b border-gray-100" : ""}`}
             >
               <div className="lg:col-span-3">
-                <p className="text-[14px] font-semibold text-gray-900 leading-relaxed">
-                  {row.claimText}
+                <p className="text-[14px] font-bold text-gray-800 leading-relaxed">
+                  {row.claimElement}
                 </p>
               </div>
-
-              <div className="lg:col-span-4 flex flex-col gap-2">
-                {index === 0 && (
-                  <span className="text-[13px] font-bold text-gray-900 mb-1">
-                    Product Analysis
-                  </span>
-                )}
-                <p className="text-[13px] text-gray-500 leading-relaxed">
-                  {row.analysis}
+              <div className="lg:col-span-4 flex flex-col">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                  Product Analysis
+                </span>
+                <p className="text-[13px] text-gray-600 leading-relaxed">
+                  {row.productAnalysis}
                 </p>
               </div>
-
-              <div className="lg:col-span-4 flex flex-col gap-2">
-                {index === 0 && (
-                  <span className="text-[13px] font-bold text-gray-900 mb-1">
-                    Evidence
-                  </span>
-                )}
-                <p className="text-[13px] text-gray-500 leading-relaxed mb-4">
-                  {row.evidence}
+              <div className="lg:col-span-4 flex flex-col gap-4">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                  Evidence
+                </span>
+                <p className="text-[13px] text-gray-600 leading-relaxed italic border-l-2 border-orange-100 pl-4">
+                  {row.supportingEvidence}
                 </p>
 
-                <div className="bg-[#fffcf7] border border-[#ffeed3] rounded-xl p-5 flex flex-col gap-3 mt-auto">
-                  <span className="text-[12px] font-bold text-gray-800">
+                {/* 🔗 SOURCES BOX */}
+                <div className="bg-[#fffcf7] border border-[#ffeed3] rounded-2xl p-5 mt-4">
+                  <span className="text-[11px] font-bold text-gray-800 uppercase block mb-3 tracking-tighter">
                     Referenced Sources:
                   </span>
                   <div className="flex flex-col gap-2">
-                    {row.sources.map((source, sIdx) => (
-                      <div
-                        key={sIdx}
-                        className="bg-white border border-gray-100 rounded flex items-center justify-between p-2 shadow-sm"
+                    {row.sourceNumbers?.map((num) => (
+                      <a
+                        key={num}
+                        href={activeResult.urlMapping?.[String(num)] || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bg-white border border-gray-100 rounded-xl flex items-center justify-between p-2.5 shadow-sm hover:border-orange-300 transition-colors group"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <span className="text-[12px] font-medium text-gray-700 whitespace-nowrap">
-                            {source.name}
+                          <span className="text-[11px] font-bold text-gray-700">
+                            Source {num}:
                           </span>
-                          <span className="text-[12px] text-gray-400 truncate">
-                            {source.url}
+                          <span className="text-[11px] text-gray-400 truncate w-40">
+                            {activeResult.urlMapping?.[String(num)]}
                           </span>
                         </div>
-                        <button className="text-[#ff6b00] hover:text-orange-700 p-1 shrink-0">
-                          <Navigation size={14} className="rotate-45" />
-                        </button>
-                      </div>
+                        <Navigation
+                          size={12}
+                          className="text-[#ff6b00] rotate-45 group-hover:scale-125 transition-transform"
+                        />
+                      </a>
                     ))}
                   </div>
                 </div>
               </div>
-
-              <div className="lg:col-span-1 flex flex-col gap-2">
-                {index === 0 && (
-                  <span className="text-[13px] font-bold text-gray-900 mb-1">
-                    Status
-                  </span>
-                )}
-                <div className="bg-white border border-gray-200 rounded px-4 py-2 text-[13px] text-gray-700 text-center shadow-sm w-fit lg:w-full">
-                  {row.status}
+              <div className="lg:col-span-1 flex flex-col items-center">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                  Status
+                </span>
+                <div
+                  className={`px-4 py-2 rounded-xl text-[12px] font-bold shadow-sm border ${row.identified === "Found" ? "bg-orange-50 border-orange-100 text-[#ff6b00]" : "bg-gray-50 border-gray-100 text-gray-400"}`}
+                >
+                  {row.identified}
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* 4. Bottom Summary Bar */}
+      <div className="bg-[#fafbfc] border border-gray-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+        <p className="text-[13px] text-gray-500 font-medium">
+          Analysis of{" "}
+          <span className="font-bold text-gray-800">
+            {activeResult?.productName}
+          </span>{" "}
+          shows {activeResult?.infringementScore === "H" ? "high" : "moderate"}{" "}
+          likelihood of infringement.
+        </p>
+        <div className="flex gap-6">
+          <Stat text="Found" count={stats.found} color="text-[#ff6b00]" />
+          <Stat text="Not Found" count={stats.notFound} color="text-red-500" />
+          <Stat text="Unknown" count={stats.unknown} color="text-gray-400" />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default ReportView;
+// --- HELPERS ---
+const HeaderTag = ({ icon, label }) => (
+  <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-gray-600">
+    <div className="text-[#ff6b00]">{icon}</div> {label}
+  </div>
+);
+
+const Stat = ({ text, count, color }) => (
+  <span className="text-[13px] font-bold text-gray-400 uppercase tracking-widest">
+    {text}: <span className={color}>{count}</span>
+  </span>
+);
+
+export default memo(ReportView);

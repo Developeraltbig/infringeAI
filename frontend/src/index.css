@@ -91,3 +91,81 @@
     transform: rotate(360deg);
   }
 }
+
+@keyframes staticProgress {
+  0% {
+    width: 0%;
+  }
+  20% {
+    width: 15%;
+  }
+  50% {
+    width: 45%;
+  }
+  80% {
+    width: 85%;
+  }
+  100% {
+    width: 92%;
+  }
+}
+
+.animate-static-progress {
+  animation: staticProgress 15s ease-out forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes progressMove {
+  0% {
+    width: 5%;
+  }
+  100% {
+    width: 95%;
+  }
+}
+
+.animate-progress-fast {
+  animation: progressMove 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}

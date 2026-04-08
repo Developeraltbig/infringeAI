@@ -12,7 +12,7 @@ const Claims = lazy(() => import("./pages/Claims"));
 const ReportView = lazy(() => import("./pages/ReportView"));
 const ClaimAnalysis = lazy(() => import("./pages/ClaimAnalysis"));
 const MyProject = lazy(() => import("./pages/MyProject"));
-const TargetSelection = lazy(() => import("./pages/TargetSelection"));
+const TargetSelection = lazy(() => import("./pages/MappingAndTargetsView"));
 
 const Loading = () => (
   <div className="h-screen w-full flex items-center justify-center font-bold">
@@ -39,7 +39,7 @@ function App() {
               <Route path="claim-analysis" element={<ClaimAnalysis />} />
               <Route path="projects" element={<MyProject />} />
               <Route path="new-analysis" element={<NewAnalysis />} />
-              <Route path="report-view" element={<ReportView />} />
+              <Route path="report-view/:id" element={<ReportView />} />
               <Route path="target-selection" element={<TargetSelection />} />
             </Route>
           </Route>

@@ -1,174 +1,10 @@
-// import React, { useState, useCallback, memo } from "react";
-// import { useSelector, useDispatch } from "react-redux";
-// import { Send, Upload, X } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
-// import { toast } from "react-toastify";
-
-// // Redux Actions & API
-// import {
-//   addBulkPatent,
-//   removeBulkPatent,
-// } from "../features/slice/analysisSlice";
-// import {
-//   useStartBulkAnalysisMutation,
-//   useStartQuickAnalysisMutation,
-//   // useStartBulkAnalysisMutation,
-// } from "../features/api/patentApiSlice";
-// import ProcessingModal from "./ProcessingModal";
-
-// const SearchArea = memo(() => {
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-//   const { mode, bulkPatents } = useSelector((state) => state.analysis);
-
-//   const [inputValue, setInputValue] = useState("");
-//   const [showModal, setShowModal] = useState(false);
-
-//   const [startQuick] = useStartQuickAnalysisMutation();
-//   const [startBulk] = useStartBulkAnalysisMutation();
-
-//   // 🟢 Handle adding/removing chips in Bulk Mode
-//   const handleKeyDown = (e) => {
-//     if (e.key === "Enter" && inputValue.trim()) {
-//       if (mode === "bulk") {
-//         dispatch(addBulkPatent(inputValue.trim()));
-//         setInputValue("");
-//       } else {
-//         handleExecute();
-//       }
-//     }
-//   };
-
-//   // 🚀 Trigger the Backend Workers
-//   const handleExecute = useCallback(async () => {
-//     // 1. Validation
-//     if (mode === "bulk" && bulkPatents.length === 0)
-//       return toast.info("Add at least one patent ID");
-//     if (mode !== "bulk" && !inputValue.trim())
-//       return toast.warning("Enter a patent ID");
-
-//     setShowModal(true);
-
-//     try {
-//       let response;
-//       if (mode === "bulk") {
-//         // Send Array of IDs
-//         response = await startBulk(bulkPatents).unwrap();
-//         toast.success(`${bulkPatents.length} patents queued!`);
-
-//         // In Bulk Mode, we redirect to the "My Projects" list to see all of them
-//         setTimeout(() => {
-//           setShowModal(false);
-//           navigate("/dashboard/projects");
-//         }, 1000);
-//       } else {
-//         // Send Single ID (Quick or Interactive)
-//         response = await startQuick(inputValue.trim()).unwrap();
-
-//         setTimeout(() => {
-//           setShowModal(false);
-//           navigate(`/dashboard/report-view/${response.projectId}`);
-//         }, 800);
-//       }
-//     } catch (err) {
-//       setShowModal(false);
-//       toast.error(err?.data?.error || "Analysis failed to start");
-//     }
-//   }, [inputValue, mode, bulkPatents, startQuick, startBulk, navigate]);
-
-//   return (
-//     <div className="w-full max-w-3xl mx-auto flex flex-col items-center animate-fade-in">
-//       {showModal && <ProcessingModal />}
-
-//       {/* 1. Main Search Container */}
-//       <div className="w-full bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-gray-300 p-3 flex flex-col transition-all focus-within:shadow-lg focus-within:border-orange-200">
-//         {/* Bulk Chips (Only in Bulk Mode) */}
-//         {mode === "bulk" && bulkPatents.length > 0 && (
-//           <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2 animate-scale-up">
-//             {bulkPatents.map((patent, index) => (
-//               <span
-//                 key={index}
-//                 className="flex items-center gap-2 text-sm font-medium text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 hover:bg-white transition-colors group"
-//               >
-//                 {patent}
-//                 <button
-//                   onClick={() => dispatch(removeBulkPatent(index))}
-//                   className="text-gray-300 hover:text-[#ff6b00]"
-//                 >
-//                   <X size={14} strokeWidth={3} />
-//                 </button>
-//               </span>
-//             ))}
-//           </div>
-//         )}
-
-//         {/* Input Row */}
-//         <div className="flex items-center w-full relative">
-//           <input
-//             type="text"
-//             value={inputValue}
-//             onChange={(e) => setInputValue(e.target.value)}
-//             onKeyDown={handleKeyDown}
-//             placeholder={
-//               mode === "bulk"
-//                 ? "Enter Patent Number (E.G., US1234567B2) and press Enter..."
-//                 : "Enter Patent Number (E.G., US1234567B2)"
-//             }
-//             className="w-full px-6 py-3 text-lg text-gray-700 bg-transparent outline-none placeholder:text-gray-300 font-medium"
-//           />
-//           <button
-//             onClick={handleExecute}
-//             className="absolute right-4 bg-[#ff6b00] hover:bg-orange-600 text-white p-3.5 rounded-full shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
-//           >
-//             <Send size={20} fill="white" />
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* 2. Mode-Specific Bottom Section */}
-//       {mode === "bulk" ? (
-//         <div className="w-full mt-10 flex flex-col items-center animate-fade-in">
-//           <p className="text-gray-400 text-sm font-medium tracking-wide mb-8 uppercase opacity-80">
-//             Add Multiple Patents — Each Analyzed In Parallel
-//           </p>
-
-//           <div className="w-full flex items-center justify-center gap-6 text-gray-200 mb-8">
-//             <div className="h-px flex-1 bg-gray-100"></div>
-//             <span className="text-gray-400 font-bold text-xs uppercase tracking-tighter">
-//               or
-//             </span>
-//             <div className="h-px flex-1 bg-gray-100"></div>
-//           </div>
-
-//           {/* Drag & Drop Zone */}
-//           <div className="w-full max-w-2xl border-2 border-gray-400 border-dashed rounded-[32px] bg-white/50 p-12 flex flex-col items-center justify-center cursor-pointer hover:border-[#ff6b00] hover:bg-orange-50/30 transition-all group border-spacing-4">
-//             <div className="w-14 h-14 rounded-2xl bg-[#ff6b00] text-white flex items-center justify-center mb-5 shadow-lg shadow-orange-100 group-hover:scale-110 transition-transform">
-//               <Upload size={28} strokeWidth={2.5} />
-//             </div>
-//             <span className="text-gray-500 font-bold text-lg tracking-tight">
-//               Upload Excel/CSV
-//             </span>
-//             <span className="text-gray-400 text-sm mt-1">
-//               Maximum 10 patents per batch
-//             </span>
-//           </div>
-//         </div>
-//       ) : (
-//         <p className="mt-10 text-gray-400 text-sm font-medium tracking-wide flex items-center gap-2 opacity-70">
-//           <span className="w-1.5 h-1.5 bg-[#ff6b00] rounded-full animate-pulse"></span>
-//           AI Selects The Best Claim & Targets Automatically
-//         </p>
-//       )}
-//     </div>
-//   );
-// });
-
-// export default SearchArea;
-
 import React, { useState, useCallback, memo, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Send, Upload, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
+// Redux Actions & API Hooks
 import {
   addBulkPatent,
   removeBulkPatent,
@@ -177,96 +13,202 @@ import {
   useStartAnalysisMutation,
   useUploadBulkFileMutation,
 } from "../features/api/patentApiSlice";
+
+// Components
 import ProcessingModal from "./ProcessingModal";
 
 const SearchArea = memo(() => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  // 1. Redux State
   const { mode, bulkPatents } = useSelector((state) => state.analysis);
 
+  // 2. Local UI States
   const [inputValue, setInputValue] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const [patentIdForModal, setPatentIdForModal] = useState("");
 
+  // 3. Error Handling States for Modal
+  const [isApiError, setIsApiError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // 4. API Mutations
   const [startAnalysis] = useStartAnalysisMutation();
   const [uploadFile] = useUploadBulkFileMutation();
 
+  /**
+   * 🚀 EXECUTE ANALYSIS
+   * Opens modal immediately and then hits the backend
+   */
   const handleExecute = useCallback(async () => {
+    const patentId = inputValue.trim();
+
+    // Basic Validation
+    if (mode !== "bulk" && !patentId)
+      return toast.warning("Please enter a Patent ID");
+    if (mode === "bulk" && bulkPatents.length === 0)
+      return toast.warning("Please add at least one Patent ID");
+
+    // 🟢 STEP 1: UI Feedback - Open Modal Instantly
+    setIsApiError(false);
+    setErrorMsg("");
+    setPatentIdForModal(
+      mode === "bulk" ? `${bulkPatents.length} Patents` : patentId,
+    );
+    setIsModalOpen(true);
+
     try {
-      const body =
+      // 🟢 STEP 2: Prepare Payload
+      const payload =
         mode === "bulk"
           ? { mode, patentIds: bulkPatents }
-          : { mode, patentId: inputValue.trim() };
+          : { mode: mode || "quick", patentId };
 
-      const res = await startAnalysis(body).unwrap();
+      // 🟢 STEP 3: API Call
+      const res = await startAnalysis(payload).unwrap();
 
-      if (mode === "bulk") navigate("/dashboard/projects");
-      else setActiveProjectId(res.projectId);
+      // 🟢 STEP 4: Success - Update Modal State
+      if (mode === "bulk") {
+        // For Bulk, we might just want to show "Queued" then go to history
+        setActiveProjectId("bulk_mode");
+      } else {
+        setActiveProjectId(res.projectId);
+      }
+
+      setInputValue(""); // Clear input field
     } catch (err) {
-      /* Toast Error */
+      // 🔴 STEP 5: Failure - Trigger "Failed" state in Modal
+      setIsApiError(true);
+      setErrorMsg(
+        err?.data?.error || "Unable to reach the AI engine. Please try again.",
+      );
+      console.error("Analysis Start Error:", err);
     }
-  }, [mode, bulkPatents, inputValue, startAnalysis, navigate]);
+  }, [mode, bulkPatents, inputValue, startAnalysis]);
 
+  /**
+   * 📁 FILE UPLOAD HANDLER
+   */
   const onFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    await uploadFile(formData).unwrap();
-    navigate("/dashboard/projects");
+
+    setIsApiError(false);
+    setPatentIdForModal(file.name);
+    setIsModalOpen(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await uploadFile(formData).unwrap();
+
+      // On success, show complete state
+      setActiveProjectId(res.projectIds?.[0] || "bulk_file");
+      toast.success("File uploaded and queued successfully");
+    } catch (err) {
+      setIsApiError(true);
+      setErrorMsg(
+        err?.data?.error ||
+          "File upload failed. Ensure it is a valid CSV/XLSX.",
+      );
+    }
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
-      {activeProjectId && (
+    <div className="w-full max-w-3xl mx-auto flex flex-col items-center animate-fade-in ">
+      {/* 🔴 THE MODAL 
+          Props passed: 
+          - projectId: if null, shows loader. if string, shows success.
+          - isError: if true, shows failure screen.
+      */}
+      {isModalOpen && (
         <ProcessingModal
           projectId={activeProjectId}
-          onClose={() => setActiveProjectId(null)}
+          patentId={patentIdForModal}
+          isError={isApiError}
+          errorMessage={errorMsg}
+          onClose={() => {
+            setIsModalOpen(false);
+            setActiveProjectId(null);
+            setIsApiError(false);
+          }}
         />
       )}
 
-      <div className="w-full bg-white rounded-3xl shadow-sm border p-3 flex flex-col">
+      {/* SEARCH BAR CONTAINER */}
+      <div className="w-full bg-white border border-gray-300 rounded-[18px] p-3 flex flex-col transition-all focus-within:shadow-xl focus-within:border-orange-200">
+        {/* Bulk Patent Chips */}
         {mode === "bulk" && bulkPatents.length > 0 && (
-          <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2">
+          <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2 animate-scale-up">
             {bulkPatents.map((p, idx) => (
               <span
                 key={idx}
-                className="flex gap-2 text-sm bg-gray-50 border rounded-full px-3 py-1.5 font-medium"
+                className="flex items-center gap-2 text-sm bg-gray-50 border border-gray-300 rounded-full px-4 py-2 font-bold text-gray-600 transition-colors hover:bg-white"
               >
-                {p}{" "}
+                {p}
                 <X
                   size={14}
-                  className="cursor-pointer text-orange-500"
+                  className="cursor-pointer text-[#ff6b00] hover:scale-125 transition-transform"
                   onClick={() => dispatch(removeBulkPatent(idx))}
                 />
               </span>
             ))}
           </div>
         )}
+
+        {/* Search Input Row */}
         <div className="flex items-center w-full relative">
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" &&
-              (mode === "bulk"
-                ? dispatch(addBulkPatent(inputValue))
-                : handleExecute())
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (mode === "bulk" && inputValue.trim()) {
+                  dispatch(addBulkPatent(inputValue.trim()));
+                  setInputValue("");
+                } else {
+                  handleExecute();
+                }
+              }
+            }}
+            placeholder={
+              mode === "bulk"
+                ? "Add multiple patents..."
+                : "Enter Patent Number (E.G., US1234567)"
             }
-            placeholder="Enter Patent Number..."
-            className="w-full px-6 py-5 text-lg outline-none bg-transparent"
+            className="w-full px-6 py-4 text-lg outline-none bg-transparent placeholder:text-gray-300 text-gray-700"
           />
           <button
             onClick={handleExecute}
-            className="absolute right-4 bg-[#ff6b00] p-3.5 rounded-full text-white shadow-lg shadow-orange-100 hover:scale-105 transition-all"
+            className="absolute right-4 bg-[#ff6b00] hover:bg-orange-600 text-white p-3.5 rounded-full shadow-lg shadow-orange-100 transition-all hover:scale-105 active:scale-95"
           >
-            <Send size={20} />
+            <Send size={20} fill="white" />
           </button>
         </div>
       </div>
 
+      {/* MODE HELPER TEXT */}
+      {mode !== "bulk" && (
+        <p className="mt-6 text-gray-400 text-[13px] font-medium tracking-wide uppercase opacity-70">
+          AI Selects The Best Claim & Targets Automatically
+        </p>
+      )}
+
+      {/* BULK UPLOAD SECTION */}
       {mode === "bulk" && (
-        <div className="w-full mt-10 flex flex-col items-center">
+        <div className="w-full mt-10 flex flex-col items-center animate-fade-in">
+          <div className="w-full flex items-center justify-center gap-6 text-gray-200 mb-8 px-10">
+            <div className="h-px flex-1 bg-gray-200/60"></div>
+            <span className="text-gray-400 font-bold text-xs uppercase tracking-tighter">
+              or
+            </span>
+            <div className="h-px flex-1 bg-gray-200/60"></div>
+          </div>
+
           <input
             type="file"
             ref={fileInputRef}
@@ -276,13 +218,17 @@ const SearchArea = memo(() => {
           />
           <div
             onClick={() => fileInputRef.current.click()}
-            className="w-full max-w-2xl border-2 border-gray-100 border-dashed rounded-[32px] p-12 flex flex-col items-center cursor-pointer hover:border-[#ff6b00] transition-all bg-white/50 group"
+            className="w-full max-w-2xl border-2 border-gray-300 border-dashed rounded-[15px] p-16 flex flex-col items-center justify-center cursor-pointer hover:border-[#ff6b00] hover:bg-orange-50/30 transition-all bg-white/50 group"
           >
-            <Upload
-              size={28}
-              className="text-[#ff6b00] group-hover:scale-110 transition-transform mb-4"
-            />
-            <span className="font-bold text-gray-500">Upload Excel/CSV</span>
+            <div className="w-14 h-14 rounded-2xl bg-[#ff6b00] text-white flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform">
+              <Upload size={28} strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-gray-600 text-lg tracking-tight">
+              Upload Excel/CSV
+            </span>
+            <span className="text-gray-400 text-xs mt-2 font-bold tracking-widest uppercase opacity-60">
+              Max 10 Patents Per Batch
+            </span>
           </div>
         </div>
       )}
