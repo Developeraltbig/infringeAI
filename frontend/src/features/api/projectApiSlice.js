@@ -9,13 +9,12 @@ export const projectApiSlice = apiSlice.injectEndpoints({
       providesTags: ["Projects"],
     }),
 
-    // Real-time Polling for the Modal/Progress bar
+    // Add this endpoint to your existing projectApiSlice
     getProjectStatus: builder.query({
       query: (id) => `/projects/status/${id}`,
+      // 🚀 OPTIMIZATION: Polling is handled dynamically in the component
+      // to prevent unnecessary server hits.
       providesTags: (result, error, id) => [{ type: "ProjectStatus", id }],
-      // 🚀 Stop polling once completed or failed
-      pollingInterval: (res) =>
-        res?.status === "completed" || res?.status === "failed" ? 0 : 3000,
     }),
 
     // Full AI Results for ReportView

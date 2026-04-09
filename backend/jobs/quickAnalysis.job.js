@@ -162,6 +162,7 @@ import serpService from "../services/serpService.js";
 import { promptTemplates } from "../utils/promptTemplates.js";
 import { safeJsonParse } from "../utils/safeJsonParser.js";
 import { analysisQueue } from "../config/queue.config.js";
+import logger from "../utils/winstonLogger.util.js";
 
 export const executeQuickAnalysis = async (job, projectId, patentId) => {
   try {
@@ -176,6 +177,7 @@ export const executeQuickAnalysis = async (job, projectId, patentId) => {
 
     // 2. AI: Generate PCR
     console.log(`[Job ${job.id}] Calling Gemini for PCR...`);
+    logger.info(`[Job ${job.id}] Calling Gemini for PCR...`);
 
     const pcrPrompt = promptTemplates.pcrPrompt(
       firstClaimText,
@@ -196,6 +198,7 @@ export const executeQuickAnalysis = async (job, projectId, patentId) => {
 
     // 3. AI: Discover Products
     console.log(`[Job ${job.id}] Calling Gemini for Discovery...`);
+    logger.info(`[Job ${job.id}] Calling Gemini for Discovery...`);
     const discoveryPrompt = promptTemplates.quickModeDiscovery20Prompt(
       firstClaimText,
       pcrResult.claimReading,
@@ -229,6 +232,7 @@ export const executeQuickAnalysis = async (job, projectId, patentId) => {
     return { success: true };
   } catch (error) {
     console.error("Quick Analysis Job Error:", error.message);
+    logger.info("Quick Analysis Job Error:", error.message);
     throw error;
   }
 };

@@ -3,6 +3,7 @@ import aiService from "../services/aiService.js";
 import exaService from "../services/exaService.js";
 import { promptTemplates } from "../utils/promptTemplates.js";
 import { safeJsonParse } from "../utils/safeJsonParser.js";
+import logger from "../utils/winstonLogger.util.js";
 
 /**
  * Executes deep analysis for a single specific product.
@@ -16,6 +17,7 @@ export const executeProductAnalysis = async (
   companyName,
 ) => {
   console.log(`[Job ${job.id}] 🚀 Deep Analysis started for: ${productName}`);
+  logger.info(`[Job ${job.id}] 🚀 Deep Analysis started for: ${productName}`);
 
   // 1. Fetch project and validate
   const project = await Project.findById(projectId);
@@ -31,6 +33,9 @@ export const executeProductAnalysis = async (
     console.log(
       `[Job ${job.id}] Product ${productName} already exists. Skipping analysis.`,
     );
+    logger.info(
+      `[Job ${job.id}] Product ${productName} already exists. Skipping analysis.`,
+    );
     return { success: true, skipped: true };
   }
 
@@ -43,6 +48,10 @@ export const executeProductAnalysis = async (
     console.log(
       `[Job ${job.id}] Step 1: Generating Storyline for ${productName}...`,
     );
+    logger.info(
+      `[Job ${job.id}] Step 1: Generating Storyline for ${productName}...`,
+    );
+
     const storylinePrompt = promptTemplates.infringementStorylinePrompt(
       productName,
       patentData,
@@ -66,6 +75,11 @@ export const executeProductAnalysis = async (
     console.log(
       `[Job ${job.id}] Step 2: Generating search queries for ${productName}...`,
     );
+
+    logger.info(
+      `[Job ${job.id}] Step 2: Generating search queries for ${productName}...`,
+    );
+
     const queriesPrompt = promptTemplates.webQueriesPrompt(
       productName,
       storylineResponse,
@@ -87,6 +101,8 @@ export const executeProductAnalysis = async (
     // STEP 3: Exa Search & Content Retrieval
     // ==========================================
     console.log(`[Job ${job.id}] Step 3: Searching web for evidence...`);
+    logger.info(`[Job ${job.id}] Step 3: Searching web for evidence...`);
+
     let allSearchResults = [];
 
     // Search the top 2 most relevant queries
@@ -129,6 +145,9 @@ export const executeProductAnalysis = async (
     // STEP 4: Final Claim Chart Generation
     // ==========================================
     console.log(
+      `[Job ${job.id}] Step 4: Building final claim chart for ${productName}...`,
+    );
+    logger.info(
       `[Job ${job.id}] Step 4: Building final claim chart for ${productName}...`,
     );
 
@@ -186,6 +205,10 @@ export const executeProductAnalysis = async (
       `[Job ${job.id}] Unique Progress: ${actualCount}/${expectedCount}`,
     );
 
+    logger.info(
+      `[Job ${job.id}] Unique Progress: ${actualCount}/${expectedCount}`,
+    );
+
     if (actualCount >= expectedCount && expectedCount > 0) {
       // 🟢 ATOMIC UPDATE: Only mark completed if not already completed
       await Project.findOneAndUpdate(
@@ -208,6 +231,7 @@ export const executeProductAnalysis = async (
     return { success: true, productName };
   } catch (error) {
     console.error(`[Job ${job.id}] ❌ Product Analysis Failed:`, error.message);
+    logger.info(`[Job ${job.id}] ❌ Product Analysis Failed:`, error.message);
     throw error; // BullMQ handles the retry
   }
 };

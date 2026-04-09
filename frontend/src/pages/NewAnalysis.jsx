@@ -6,7 +6,7 @@ const ModeSelector = lazy(() => import("../components/ModeSelector"));
 
 const NewAnalysis = memo(() => {
   return (
-    <div className="w-full h-[70vh] max-w-6xl mx-auto flex flex-col items-center justify-center mt-8 animate-fade-in-up">
+    <div className="w-full h-[100vh] max-w-6xl mx-auto flex flex-col items-center justify-center mt-8 animate-fade-in-up">
       <div className="text-center mb-12">
         <h2 className="text-4xl md:text-5xl font-bold text-[#111] mb-4">
           Patent Infringement <span className="text-[#ff6b00]">Analysis</span>
