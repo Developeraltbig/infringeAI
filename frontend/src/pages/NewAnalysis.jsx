@@ -1,30 +1,65 @@
-import React, { Suspense, lazy, memo } from "react";
+import React, { useState, useCallback, Suspense, lazy, memo } from "react";
+import ModeSelector from "../components/ModeSelector";
+import SearchArea from "../components/SearchArea";
+import { useSelector } from "react-redux";
 
-// 🚀 Optimization: Lazy Load the heavy search component
-const SearchArea = lazy(() => import("../components/SearchArea"));
-const ModeSelector = lazy(() => import("../components/ModeSelector"));
+const ProcessingModal = lazy(() => import("../components/ProcessingModal"));
 
 const NewAnalysis = memo(() => {
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const mode = useSelector((state) => state.analysis.mode);
+
+  const handleStart = useCallback((id) => {
+    setActiveProjectId(id);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setActiveProjectId(null);
+  }, []);
+
   return (
-    <div className="w-full h-[100vh] max-w-6xl mx-auto flex flex-col items-center justify-center mt-8 animate-fade-in-up">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl md:text-5xl font-bold text-[#111] mb-4">
-          Patent Infringement <span className="text-[#ff6b00]">Analysis</span>
-        </h2>
-        <p className="text-gray-500 text-lg">
-          Generate Professional Claim Charts In Minutes.
-        </p>
-      </div>
+    <div className="w-full min-h-full flex flex-col items-center">
+      {!activeProjectId ? (
+        /* 🟢 STATE A: SEARCH UI (Matches your First Screenshot) */
+        <div className="w-full flex flex-col items-center animate-fade-in py-10">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl md:text-[64px] font-black text-gray-900 mb-4 tracking-tighter leading-tight">
+              Patent Infringement{" "}
+              <span className="text-[#ff6b00]">Analysis</span>
+            </h1>
+            <p className="text-gray-400 text-lg font-medium">
+              Generate Professional Claim Charts In Minutes.
+            </p>
+          </div>
 
-      <ModeSelector />
+          <ModeSelector />
 
-      <Suspense
-        fallback={
-          <div className="h-20 w-full animate-pulse bg-gray-100 rounded-3xl" />
-        }
-      >
-        <SearchArea />
-      </Suspense>
+          <SearchArea onStarted={handleStart} />
+
+          {/* Sub-text based on Mode */}
+          <p className="mt-8 text-gray-400 text-sm font-medium tracking-wide">
+            {mode === "interactive"
+              ? "You Choose Claims & Target Companies Step By Step"
+              : "AI Selects The Best Claim & Targets Automatically"}
+          </p>
+        </div>
+      ) : (
+        /* 🟠 STATE B: WORKFLOW UI (Full Workspace) */
+        <Suspense
+          fallback={
+            <div className="p-20 text-orange-500 font-bold animate-pulse text-center">
+              INITIALIZING AI...
+            </div>
+          }
+        >
+          <div className="w-full animate-fade-in">
+            <ProcessingModal
+              projectId={activeProjectId}
+              onClose={handleReset}
+            />
+          </div>
+        </Suspense>
+      )}
     </div>
   );
 });

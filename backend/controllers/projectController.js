@@ -166,22 +166,62 @@ export const createProject = async (req, res) => {
 // ---------------------------------------------------------------------------
 // Get project status (Polled by Frontend Processing components)
 // ---------------------------------------------------------------------------
+// export const getProjectStatus = async (req, res) => {
+//   try {
+//     const { projectId } = req.params;
+//     const userId = getUserId(req);
+
+//     // SECURITY: Ensure user owns the project
+//     const project = await Project.findOne({ _id: projectId, userId }).select(
+//       "status currentStep progress failureReason mode",
+//     );
+
+//     if (!project)
+//       return res
+//         .status(404)
+//         .json({ error: "Project not found or access denied" });
+
+//     // UI-Friendly labels for internal steps
+//     const stepNames = {
+//       initializing: "Waking up AI workers...",
+//       quickAnalysis: "Analyzing Patent Claims...",
+//       productSelection: "Searching for Infringing Products...",
+//       productProcessing: "Generating Evidence Charts...",
+//       finalizing: "Finalizing Report...",
+//       completed: "Analysis Complete!",
+//     };
+
+//     res.json({
+//       status: project.status,
+//       currentStep: project.currentStep,
+//       currentStepName: stepNames[project.currentStep] || "Processing...",
+//       progressPercentage:
+//         project.status === "completed" ? 100 : project.progress || 10,
+//       mode: project.mode,
+//       error: project.failureReason,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: "Server error fetching status" });
+//   }
+// };
+
 export const getProjectStatus = async (req, res) => {
   try {
     const { projectId } = req.params;
     const userId = getUserId(req);
 
-    // SECURITY: Ensure user owns the project
+    // 1. Fetch the primary project
     const project = await Project.findOne({ _id: projectId, userId }).select(
-      "status currentStep progress failureReason mode",
+      "status currentStep progress failureReason mode bulkGroupId patentId",
     );
 
-    if (!project)
+    if (!project) {
       return res
         .status(404)
         .json({ error: "Project not found or access denied" });
+    }
 
-    // UI-Friendly labels for internal steps
+    // --- STEP NAMES MAPPING ---
     const stepNames = {
       initializing: "Waking up AI workers...",
       quickAnalysis: "Analyzing Patent Claims...",
@@ -191,6 +231,48 @@ export const getProjectStatus = async (req, res) => {
       completed: "Analysis Complete!",
     };
 
+    // ============================================================
+    // 🟢 2. BULK MODE LOGIC: CHECK ENTIRE BATCH
+    // ============================================================
+    if (project.mode === "bulk" && project.bulkGroupId) {
+      // Find all projects belonging to this batch
+      const allInGroup = await Project.find({
+        bulkGroupId: project.bulkGroupId,
+        userId,
+      }).select("patentId status progress patentData.biblioData");
+
+      // Check if every single patent in the batch is done (completed or failed)
+      const isBatchFinished = allInGroup.every(
+        (p) => p.status === "completed" || p.status === "failed",
+      );
+
+      // Calculate average progress of the entire batch
+      const totalProgress = allInGroup.reduce(
+        (acc, p) => acc + (p.progress || 0),
+        0,
+      );
+      const batchProgressPercentage = Math.round(
+        totalProgress / allInGroup.length,
+      );
+
+      return res.json({
+        // 🚀 CRITICAL: We only say "completed" if the WHOLE batch is done
+        status: isBatchFinished ? "completed" : "processing",
+        currentStep: isBatchFinished ? "completed" : "batchProcessing",
+        currentStepName: isBatchFinished
+          ? "All Patents Analyzed!"
+          : `Processing Batch (${allInGroup.filter((p) => p.status === "completed").length}/${allInGroup.length} done)`,
+        progressPercentage: isBatchFinished ? 100 : batchProgressPercentage,
+        mode: "bulk",
+        patentId: project.patentId, // Still return the main one for header
+        // 🚀 This array is used by your SuccessState.jsx to show the grid
+        groupProjects: allInGroup,
+      });
+    }
+
+    // ============================================================
+    // 🔵 3. QUICK / INTERACTIVE LOGIC (Single Patent)
+    // ============================================================
     res.json({
       status: project.status,
       currentStep: project.currentStep,
@@ -198,9 +280,11 @@ export const getProjectStatus = async (req, res) => {
       progressPercentage:
         project.status === "completed" ? 100 : project.progress || 10,
       mode: project.mode,
+      patentId: project.patentId,
       error: project.failureReason,
     });
   } catch (error) {
+    console.error("Status API Error:", error);
     res.status(500).json({ error: "Server error fetching status" });
   }
 };
