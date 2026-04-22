@@ -23,6 +23,7 @@ import { toggleSidebar } from "../features/slice/analysisSlice";
 import { selectCurrentUser, logOut } from "../features/auth/authSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
 import { useGetProjectsQuery } from "../features/api/projectApiSlice";
+import { useLogoutMutation } from "../features/auth/authApiSlice";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -32,11 +33,15 @@ const Sidebar = () => {
 
   const { isSidebarOpen } = useSelector((state) => state.analysis);
   const user = useSelector(selectCurrentUser);
+
   const { data: projectsData } = useGetProjectsQuery();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Inside your component (e.g., Sidebar or Header)
+  const [logoutApi] = useLogoutMutation();
 
   // Click outside to close profile modal
   useEffect(() => {
@@ -52,20 +57,40 @@ const Sidebar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // sign out logic
+
   const handleSignOut = useCallback(async () => {
     setIsLoggingOut(true);
-    const logoutBackendUrl = `${import.meta.env.VITE_PATSERO_BACKEND_URL}/user-auth/logout`;
+
     try {
-      await axios.post(logoutBackendUrl, {}, { withCredentials: true });
+      // 1. Call the RTK Query Mutation
+      // This tells the backend (8080) to send the "Clear-Cookie" header
+      await logoutApi().unwrap();
+
+      console.log("Session cleared on server");
     } catch (err) {
-      console.error("Logout error", err);
+      // Even if the network fails, we proceed to log out the user locally
+      console.error("Server logout failed, clearing local state anyway", err);
     } finally {
-      // dispatch(logOut());
-      setIsProfileOpen(false);
-      setIsLoggingOut(false);
+      // 2. 🛡️ Reset all RTK Query cache (Wipes patent data from memory)
+      dispatch(authApiSlice.util.resetApiState());
+
+      // 3. 🧹 Purge Redux-Persist (Disk cleanup)
+      await persistor.purge();
+
+      // 4. Clear Auth State in memory
+      dispatch(logOut());
+
+      // 5. Final storage wipe
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 6. 🚀 Hard Refresh to Landing Page
+      // Using window.location.href ensures that the entire app state
+      // is destroyed and the user is treated as a guest on reload.
       navigate("/");
     }
-  }, [dispatch]);
+  }, [dispatch, logoutApi]);
 
   // 💡 Optimized Memoization with Regex cleaning
   const recentProjects = useMemo(() => {

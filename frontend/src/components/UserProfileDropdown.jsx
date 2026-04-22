@@ -8,7 +8,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
   return (
     <div
       className="w-[250px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2 animate-scale-up"
-      onClick={(e) => e.stopPropagation()} //  Important: Keeps clicks inside
+      onClick={(e) => e.stopPropagation()}
     >
       <div className="px-5 py-6">
         <div className="text-[17px] font-bold text-[#1a202c] leading-tight">
@@ -22,6 +22,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
       <div className="h-px bg-gray-50 w-full mb-2" />
 
       <div className="flex flex-col gap-1 px-1">
+        {/* All links point to the Main Software URL */}
         <Link
           to={`${FrontendUrl}/account`}
           className="flex items-center gap-4 px-4 py-3 text-[15px] text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors group"
@@ -58,7 +59,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
             disabled={isLoggingOut}
             onClick={(e) => {
               e.preventDefault();
-              onLogout(); // 🟢 Correctly triggers the sidebar function
+              onLogout(); // This triggers the logout logic in the parent
             }}
             className="flex items-center gap-4 w-full px-4 py-4 text-[16px] font-medium text-[#f56565] hover:bg-red-50 rounded-2xl transition-colors group disabled:opacity-50"
           >

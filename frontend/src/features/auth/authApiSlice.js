@@ -7,9 +7,17 @@ export const authApiSlice = apiSlice.injectEndpoints({
     checkAuth: builder.query({
       query: () => `${centralAuthUrl}/user-auth/check`,
     }),
+
+    logout: builder.mutation({
+      query: () => ({
+        url: "/user-auth/logout",
+        method: "POST",
+      }),
+    }),
   }),
 });
 
 export const {
   useCheckAuthQuery, // This hook is for verifying on page load
+  useLogoutMutation,
 } = authApiSlice;

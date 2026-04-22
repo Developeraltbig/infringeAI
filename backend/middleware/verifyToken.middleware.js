@@ -27,7 +27,7 @@ const verifyUserToken = async (req, _res, next) => {
         },
       );
 
-      console.log(response);
+      console.log("response", response);
 
       // 4. If we get here, the Core Backend returned 200 OK!
       // Extract the user data that the core backend sent back.

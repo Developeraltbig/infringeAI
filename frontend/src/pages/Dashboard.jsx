@@ -97,11 +97,22 @@
 
 // export default Dashboard;
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleSidebar } from "../features/slice/analysisSlice";
+import logo from "../assets/whiteLogo.png";
+import { Menu } from "lucide-react";
 
 const Dashboard = memo(() => {
+  const dispatch = useDispatch();
+  const isSidebarOpen = useSelector((state) => state.analysis.isSidebarOpen);
+
+  const handleToggle = useCallback(() => {
+    dispatch(toggleSidebar());
+  }, [dispatch]);
+
   return (
     <div className="flex h-screen w-full bg-[#faf9f6] overflow-hidden font-sans">
       {/* 1. SIDEBAR: Your existing Sidebar.jsx stays here */}
@@ -109,6 +120,19 @@ const Dashboard = memo(() => {
 
       {/* 2. MAIN WORKSPACE: This area scrolls. Content will NOT cut at the top here. */}
       <main className="flex-1 h-full overflow-y-auto relative custom-scrollbar bg-[#faf9f6]">
+        {/* MOBILE HEADER (Only visible on small screens) */}
+        <div className="md:hidden flex items-center h-[64px] px-6 bg-[#000000] border-b border-white/10 shrink-0 z-30">
+          <button
+            onClick={handleToggle}
+            className="text-white p-1 -ml-1 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="w-[100px] ml-5">
+            <img src={logo} alt="Logo" />
+          </div>
+        </div>
+
         {/* We use padding here to protect your UI from touching the edges */}
         <div className="p-4 md:p-8 lg:p-12 w-full max-w-[1600px] mx-auto min-h-full">
           <Outlet />
