@@ -83,6 +83,10 @@ export const executeQuickAnalysis = async (job, projectId, patentId) => {
           item.manufacturer ||
           item.organization ||
           "Unknown Company";
+
+        logger.info("company", item);
+        console.log(item);
+
         const product =
           item.product || item.brand || item.service || "Unknown Product";
 

@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   RefreshCw,
+  MoveLeft,
 } from "lucide-react";
 
 const ReportView = () => {
@@ -36,9 +37,30 @@ const ReportView = () => {
     );
   }, [project]);
 
+  console.log(project);
+
   // 3. Memoize current active result set
+  // const activeResult = useMemo(() => {
+  //   return project?.results?.finalClaimChart?.[activeChartIdx] || null;
+  // }, [project, activeChartIdx]);
+
+  // 2. 🟢 ENHANCED: Memoize current active result set with Company Name
   const activeResult = useMemo(() => {
-    return project?.results?.finalClaimChart?.[activeChartIdx] || null;
+    const chartData = project?.results?.finalClaimChart?.[activeChartIdx];
+    if (!chartData) return null;
+
+    // Logic: If companyName is already in the chart result, use it.
+    // Otherwise, find the matching product in the 'allDiscoveredProducts' array.
+    const discoveredInfo = project?.allDiscoveredProducts?.find(
+      (item) => item.product === chartData.productName,
+    );
+
+    return {
+      ...chartData,
+      // Priority 1: Backend field | Priority 2: Discovery list match | Priority 3: Fallback
+      companyName:
+        chartData.companyName || discoveredInfo?.company || "Unknown Company",
+    };
   }, [project, activeChartIdx]);
 
   // 4. Derived Stats
@@ -109,9 +131,24 @@ const ReportView = () => {
     <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-5 p-6 animate-fade-in font-sans pb-20">
       {/* 1. Header Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-xl font-bold text-gray-800">
-          Patent Infringement Claim Chart
-        </h1>
+        <div className="flex items-center gap-4">
+          {/* --- 🚀 BACK BUTTON --- */}
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-all group"
+            title="Go Back"
+          >
+            <ArrowLeft
+              size={26}
+              className="text-gray-400 group-hover:text-[#ff6b00] transition-colors"
+            />
+          </button>
+
+          <h1 className="text-xl font-bold text-gray-800">
+            Patent Infringement Claim Chart
+          </h1>
+        </div>
+
         <div className="flex flex-wrap items-center gap-6">
           <HeaderTag
             icon={<FileText size={16} />}
@@ -119,7 +156,7 @@ const ReportView = () => {
           />
           <HeaderTag
             icon={<Building2 size={16} />}
-            label={activeResult?.company || "N/A"}
+            label={activeResult?.companyName || "N/A"}
           />
           <HeaderTag
             icon={<Box size={16} />}

@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
+import { useParams, useNavigate } from "react-router-dom"; // 🟢 Added for routing functionality
 import {
   useGetProjectStatusQuery,
   useGetProjectDetailsQuery,
@@ -13,7 +14,7 @@ import {
 import { Loader2 } from "lucide-react";
 import Stepper from "./Stepper";
 
-// Lazy loaded views
+// Lazy loaded views (Imports kept exactly as provided)
 const ClaimsStep = lazy(() => import("./interactive/ClaimsStep"));
 const MappingView = lazy(() => import("./interactive/MappingView"));
 const TargetSelectionStep = lazy(
@@ -23,13 +24,25 @@ const ProcessingState = lazy(() => import("../pages/ProcessingState"));
 const SuccessState = lazy(() => import("./interactive/SuccessState"));
 const FailureState = lazy(() => import("./interactive/FailureState"));
 
-const ProcessingWizard = memo(({ projectId, onReset }) => {
+const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
+  const navigate = useNavigate();
+  const { projectId: paramId } = useParams();
+
+  // 🟢 1. ROBUST ID DETECTION: Works both as a Prop (New Analysis) and a URL Param (Resume from Vault)
+  const projectId = propId || paramId;
+
   const [showTargetGrid, setShowTargetGrid] = useState(false);
 
-  // 🔌 Polling
-  const { data: status, isError } = useGetProjectStatusQuery(projectId, {
+  // 🔌 2. API SYNC
+  const {
+    data: status,
+    isError,
+    error: apiError,
+  } = useGetProjectStatusQuery(projectId, {
+    skip: !projectId,
     pollingInterval: 3000,
   });
+
   const { data: details } = useGetProjectDetailsQuery(projectId, {
     skip:
       !projectId ||
@@ -38,20 +51,51 @@ const ProcessingWizard = memo(({ projectId, onReset }) => {
       ),
   });
 
-  if (!status) return null;
+  // 🟢 3. AUTO-REDIRECT LOGIC: If the project finishes, take user to the report automatically
+  useEffect(() => {
+    if (status?.status === "completed") {
+      // Small delay so user sees "Complete" state before redirect
+      const timer = setTimeout(() => {
+        if (onReset) onReset(); // Clear parent state if applicable
+        navigate(`/dashboard/report-view/${projectId}`, { replace: true });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [status?.status, navigate, projectId, onReset]);
+
+  // Handle errors (Project not found or Auth expiry)
+  if (isError || status?.status === "failed") {
+    return (
+      <FailureState
+        reason={status?.failureReason || apiError?.data?.message}
+        onClose={onReset || (() => navigate("/dashboard/projects"))}
+      />
+    );
+  }
+
+  if (!status)
+    return (
+      <div className="p-20 flex flex-col items-center justify-center animate-pulse">
+        <Loader2 className="animate-spin text-[#ff6b00] mb-4" size={48} />
+        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
+          Connecting to Engine...
+        </p>
+      </div>
+    );
 
   const renderContent = () => {
-    if (status.status === "failed" || isError)
-      return <FailureState reason={status?.failureReason} onClose={onReset} />;
-    if (status.status === "completed")
+    // 🟢 Terminal Success State
+    if (status.status === "completed") {
       return (
         <SuccessState
           projectId={projectId}
-          data={details?.project}
-          onClose={onReset}
+          data={details?.project || status} // Use status if details not yet loaded
+          onClose={onReset || (() => navigate("/dashboard/projects"))}
         />
       );
+    }
 
+    // 🟠 Interactive Mode Step Logic
     switch (status.currentStep) {
       case "claimSelection":
         return (
@@ -60,10 +104,11 @@ const ProcessingWizard = memo(({ projectId, onReset }) => {
             <ClaimsStep
               projectId={projectId}
               data={details?.project}
-              onProceed={() => {}}
+              onProceed={() => {}} // Polling handles the transition automatically
             />
           </div>
         );
+
       case "targetSelection":
         return !showTargetGrid ? (
           <MappingView
@@ -78,7 +123,9 @@ const ProcessingWizard = memo(({ projectId, onReset }) => {
             onBack={() => setShowTargetGrid(false)}
           />
         );
+
       default:
+        // 🔵 Processing Loader (Quick, Bulk, or Intermediate steps)
         return <ProcessingState status={status} />;
     }
   };
@@ -88,8 +135,11 @@ const ProcessingWizard = memo(({ projectId, onReset }) => {
       <div className="w-full">
         <Suspense
           fallback={
-            <div className="p-20 flex justify-center">
-              <Loader2 className="animate-spin text-[#ff6b00]" size={48} />
+            <div className="p-20 flex flex-col items-center justify-center">
+              <Loader2 className="animate-spin text-[#ff6b00] mb-4" size={48} />
+              <span className="text-gray-400 font-bold text-xs uppercase tracking-widest">
+                Assembling View...
+              </span>
             </div>
           }
         >

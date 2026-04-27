@@ -111,10 +111,12 @@ After your comprehensive analysis of 1500 words which you need to give unstructu
 {
   "candidates": [
     {
+      "company": "Real Company Name1",
       "product": "ProductName1",
       "description": "implements claim's X via Y feature"
     },
     {
+      "company": "Real Company Name2",
       "product": "ProductName2", 
       "description": "performs patented method through Z capability"
     },

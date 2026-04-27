@@ -38,5 +38,6 @@ export const {
   useGetProjectsQuery,
   useGetProjectStatusQuery,
   useGetProjectDetailsQuery,
+  useLazyGetProjectDetailsQuery,
   useDeleteProjectMutation,
 } = projectApiSlice;

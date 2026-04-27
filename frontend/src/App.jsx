@@ -4,6 +4,7 @@ import AuthProvider from "./layout/AuthProvider";
 import GuestLayout from "./layout/GuestLayout";
 import ProtectedLayout from "./layout/ProtectedLayout";
 import ClaimsStep from "./components/interactive/ClaimsStep";
+import ProcessingWizard from "./components/ProcessingWizard";
 
 // Lazy Loaded Pages
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -36,8 +37,10 @@ function App() {
             {/* Make Dashboard a parent */}
             <Route path="/dashboard" element={<Dashboard />}>
               <Route index element={<NewAnalysis />} />
-              {/* <Route path="claims" element={<ClaimsStep />} /> */}
-              {/* <Route path="claim-analysis" element={<ClaimAnalysis />} /> */}
+              <Route
+                path="processing/:projectId"
+                element={<ProcessingWizard />}
+              />
               <Route path="projects" element={<MyProject />} />
               <Route path="new-analysis" element={<NewAnalysis />} />
               <Route path="report-view/:id" element={<ReportView />} />
