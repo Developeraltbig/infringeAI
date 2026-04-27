@@ -165,7 +165,17 @@ const MyProject = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 8;
 
-  const { data: projectsData, isLoading } = useGetProjectsQuery();
+  // const { data: projectsData, isLoading } = useGetProjectsQuery();
+
+  const { data: projectsData, isLoading } = useGetProjectsQuery(undefined, {
+    // 🚀 This is the magic: Ask the server for the latest status every 5 seconds.
+    // It will automatically update the "Processing" pills to "Complete".
+    pollingInterval: 5000,
+
+    // Also refetch data if the user switches back to this tab from another window
+    refetchOnFocus: true,
+  });
+
   const [deleteProject, { isLoading: isDeleting }] = useDeleteProjectMutation();
   const [triggerFetchDetails] = useLazyGetProjectDetailsQuery();
   const [downloadingId, setDownloadingId] = useState(null);

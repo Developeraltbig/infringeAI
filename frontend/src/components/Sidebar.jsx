@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -21,7 +22,7 @@ import {
 import logo from "../assets/whiteLogo.png";
 import { toggleSidebar } from "../features/slice/analysisSlice";
 import { selectCurrentUser, logOut } from "../features/auth/authSlice";
-import { apiSlice } from "../features/api/apiSlice"; // 🟢 Import base apiSlice for resetting
+import { apiSlice } from "../features/api/apiSlice";
 import { useGetProjectsQuery } from "../features/api/projectApiSlice";
 import { useLogoutMutation } from "../features/auth/authApiSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
@@ -32,15 +33,17 @@ const Sidebar = () => {
   const location = useLocation();
   const profileAreaRef = useRef(null);
 
-  // 1. Fetch State & Data
   const { isSidebarOpen } = useSelector((state) => state.analysis);
   const user = useSelector(selectCurrentUser);
+
   const { data: projectsData } = useGetProjectsQuery();
-  const [logoutApi] = useLogoutMutation();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // API Hooks
+  const [logoutApi] = useLogoutMutation();
 
   // 🟢 Logic: Close profile modal when clicking outside
   useEffect(() => {
@@ -56,48 +59,43 @@ const Sidebar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🟢 Logic: Robust Sign Out (Server + Client Cleanup)
+  // 🟢 Logic: Sign out (Server + Client Cleanup)
   const handleSignOut = useCallback(async () => {
     setIsLoggingOut(true);
     try {
-      // 1. Hit the Central Auth Server to clear cookies
       await logoutApi().unwrap();
     } catch (err) {
       console.error("Server logout failed, clearing local state anyway", err);
     } finally {
-      // 2. 🛡️ Reset all RTK Query cache (Clears project data from memory)
+      // Reset RTK Query cache
       dispatch(apiSlice.util.resetApiState());
-
-      // 3. 🧹 Clear Auth State & Local Storage
+      // Clear Redux & Storage
       dispatch(logOut());
       localStorage.clear();
       sessionStorage.clear();
-
-      // 4. 🚀 Redirect to Landing Page
       setIsProfileOpen(false);
       setIsLoggingOut(false);
       navigate("/");
     }
   }, [dispatch, logoutApi, navigate]);
 
-  // 🟢 Logic: Optimized Memoization with Regex cleaning for Recent Analysis
+  // 🟢 Logic: Regex cleaning for Recent Analysis
   const recentProjects = useMemo(() => {
     if (!projectsData?.projects) return [];
     return projectsData.projects
       .map((item) => ({
         ...item,
-        // Regex: remove 'patent/' and '/en'
         displayId: item.patentId?.replace(/^patent\/|\/en$/gi, "") || "N/A",
-        // Regex: remove time (T00:00:00...)
         displayDate: item.createdAt?.replace(/T.*/, "") || "N/A",
       }))
       .slice(0, 5);
   }, [projectsData]);
 
-  // 🟢 Logic: Navigation helper for processing vs completed
+  // 🟢 Logic: Navigation helper
   const handleNavigation = useCallback(
     (path) => {
       navigate(path);
+      // Only close sidebar on mobile (less than 768px)
       if (window.innerWidth < 768 && isSidebarOpen) {
         dispatch(toggleSidebar());
       }
@@ -105,9 +103,27 @@ const Sidebar = () => {
     [navigate, isSidebarOpen, dispatch],
   );
 
+  // 🟢 Logic: Resumable Workflow View Helper
+  const handleViewProject = useCallback(
+    (item) => {
+      if (!item || !item._id) return;
+      const { _id, status } = item;
+
+      if (status === "completed") {
+        navigate(`/dashboard/report-view/${_id}`);
+      } else if (status === "processing" || status === "created") {
+        navigate(`/dashboard/processing/${_id}`);
+      } else if (status === "failed") {
+        // This is handled by the FailureModal in MyProject.jsx
+        navigate(`/dashboard/projects`);
+      }
+    },
+    [navigate],
+  );
+
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile Backdrop Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] md:hidden transition-opacity"
@@ -115,6 +131,7 @@ const Sidebar = () => {
         />
       )}
 
+      {/* 🚀 MAIN SIDEBAR: Toggles between 280px and 80px on Desktop */}
       <aside
         className={`fixed md:relative inset-y-0 left-0 z-50 bg-[#0a0a0a] text-white flex flex-col transition-all duration-300 ease-in-out border-r border-white/5
           ${isSidebarOpen ? "w-[280px] translate-x-0" : "w-[80px] -translate-x-full md:translate-x-0"}
@@ -133,11 +150,12 @@ const Sidebar = () => {
             onClick={() => dispatch(toggleSidebar())}
             className={`text-gray-500 hover:text-white transition-colors ${!isSidebarOpen ? "p-2" : ""}`}
           >
-            {isSidebarOpen ? (
-              <X size={20} className="md:hidden" />
-            ) : (
-              <PanelLeft size={22} className="block" />
-            )}
+            {/* Show X on Mobile when open, otherwise show PanelLeft */}
+            {isSidebarOpen ? <X size={20} className="md:hidden" /> : null}
+            <PanelLeft
+              size={22}
+              className={`${isSidebarOpen ? "hidden md:block" : "block"}`}
+            />
           </button>
         </div>
 
@@ -159,14 +177,14 @@ const Sidebar = () => {
           />
         </div>
 
-        {/* COLLAPSIBLE HISTORY */}
+        {/* COLLAPSIBLE HISTORY SECTION */}
         {isSidebarOpen && (
           <div className="mt-8 flex-1 flex flex-col overflow-hidden animate-fade-in">
             <div
               onClick={() => setIsHistoryOpen(!isHistoryOpen)}
               className="px-8 flex items-center justify-between cursor-pointer group mb-4"
             >
-              <h3 className="text-[10px] uppercase tracking-[2px] text-gray-500 font-extrabold group-hover:text-gray-300">
+              <h3 className="text-[10px] uppercase tracking-[2px] text-gray-500 font-extrabold group-hover:text-gray-300 transition-colors">
                 Recent Analysis
               </h3>
               <ChevronDown
@@ -212,7 +230,7 @@ const Sidebar = () => {
         )}
         {!isSidebarOpen && <div className="flex-1" />}
 
-        {/* UPGRADE PLAN */}
+        {/* UPGRADE PLAN BANNER */}
         {isSidebarOpen && (
           <div className="mx-4 mb-6 p-3 bg-[#0e1117] border border-white/5 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-[#161b22] group animate-fade-in">
             <div className="w-10 h-10 bg-[#ff6b00]/10 rounded-xl flex items-center justify-center shrink-0">
@@ -224,7 +242,7 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* PROFILE SECTION (Ref based for click-outside) */}
+        {/* PROFILE SECTION */}
         <div
           className={`relative border-t border-white/5 py-3 bg-[#0a0a0a] z-[70] ${isSidebarOpen ? "px-4" : "px-0"}`}
           ref={profileAreaRef}
@@ -242,7 +260,7 @@ const Sidebar = () => {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className={`flex items-center gap-3 p-2 rounded-2xl cursor-pointer hover:bg-white/5 transition-all ${!isSidebarOpen ? "justify-center" : ""}`}
           >
-            <div className="w-11 h-11 rounded-full bg-[#f47b20] border-2 border-[#1a1a1a] flex items-center justify-center text-white font-bold text-lg uppercase shadow-lg shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#f47b20] border-2 border-[#1a1a1a] flex items-center justify-center text-white font-bold text-lg uppercase shadow-lg shrink-0 transition-colors">
               {user?.name?.charAt(0) || "U"}
             </div>
             {isSidebarOpen && (
