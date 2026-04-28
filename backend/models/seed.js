@@ -29,9 +29,9 @@ const seedUser = async () => {
     }
 
     const newUser = await User.create({
-      name: "Raj",
-      email: "raj@gmail.com",
-      password: "123456",
+      name: "Demo",
+      email: "demo@patprolytics.com",
+      password: "Demo@123456",
       role: "admin",
       credits: 50,
     });
