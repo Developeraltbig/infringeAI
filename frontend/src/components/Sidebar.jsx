@@ -17,6 +17,7 @@ import {
   PanelLeft,
   X,
   ChevronUp,
+  ShieldCheck,
 } from "lucide-react";
 
 import logo from "../assets/whiteLogo.png";
@@ -232,13 +233,36 @@ const Sidebar = () => {
 
         {/* UPGRADE PLAN BANNER */}
         {isSidebarOpen && (
-          <div className="mx-4 mb-6 p-3 bg-[#0e1117] border border-white/5 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-[#161b22] group animate-fade-in">
-            <div className="w-10 h-10 bg-[#ff6b00]/10 rounded-xl flex items-center justify-center shrink-0">
-              <Crown className="text-[#ff6b00]" size={20} />
+          <div className="mx-4 mb-8 p-6 bg-[#0e1117] border border-white/5 rounded-[24px] flex flex-col gap-6 shadow-xl animate-fade-in">
+            {/* Top Row: Credits Count + Shield Icon */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-baseline gap-2">
+                <span className="text-white text-xl font-black tracking-tight">
+                  40/50
+                </span>
+                <span className="text-gray-400 text-sm font-bold">
+                  Credits Left
+                </span>
+              </div>
+
+              {/* The Shield Icon Box */}
+              <div className="w-10 h-10 bg-[#1a1410] rounded-2xl flex items-center justify-center border border-white/5">
+                <ShieldCheck
+                  className="text-[#ff6b00]"
+                  size={20}
+                  strokeWidth={2.5}
+                />
+              </div>
             </div>
-            <span className="text-[14px] font-bold text-gray-200 group-hover:text-white whitespace-nowrap">
-              Upgrade Your Plan
-            </span>
+
+            {/* 📊 The Glowing Progress Bar */}
+            <div className="w-full h-2.5 bg-[#1a1f26] rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-[#ff6b00] rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,107,0,0.4)]"
+                // style={{ width: `${Math.min(percentage, 100)}%` }}
+                style={{ width: "90%" }}
+              />
+            </div>
           </div>
         )}
 

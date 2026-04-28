@@ -25,6 +25,7 @@ const seedUser = async () => {
       email: "raj@gmail.com",
       password: "123456",
       role: "admin", // Optional: Set to admin if you are creating a master account
+      credits: 50,
     });
 
     console.log("User created successfully!");

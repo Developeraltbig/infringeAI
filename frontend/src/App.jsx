@@ -5,6 +5,7 @@ import GuestLayout from "./layout/GuestLayout";
 import ProtectedLayout from "./layout/ProtectedLayout";
 import ClaimsStep from "./components/interactive/ClaimsStep";
 import ProcessingWizard from "./components/ProcessingWizard";
+import InsufficientCreditsModal from "./components/InsufficientCreditsModal";
 
 // Lazy Loaded Pages
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -44,7 +45,7 @@ function App() {
               <Route path="projects" element={<MyProject />} />
               <Route path="new-analysis" element={<NewAnalysis />} />
               <Route path="report-view/:id" element={<ReportView />} />
-              {/* <Route path="target-selection" element={<TargetSelection />} /> */}
+              <Route path="credit" element={<InsufficientCreditsModal />} />
             </Route>
           </Route>
         </Routes>
