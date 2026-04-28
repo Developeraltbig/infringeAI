@@ -23,7 +23,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
 
       <div className="flex flex-col gap-1 px-1">
         {/* All links point to the Main Software URL */}
-        <Link
+        {/* <Link
           to={`${FrontendUrl}/account`}
           className="flex items-center gap-4 px-4 py-3 text-[15px] text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors group"
         >
@@ -51,7 +51,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
             className="text-gray-400 group-hover:text-gray-600"
           />
           <span>Request Free Trial</span>
-        </Link>
+        </Link> */}
 
         <div className="mt-2 pt-2 border-t border-gray-50">
           <button
