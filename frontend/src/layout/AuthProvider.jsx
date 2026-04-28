@@ -1,26 +1,3 @@
-// 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -35,24 +12,16 @@ const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const persistedUser = useSelector(selectCurrentUser);
 
-  // Runs on app load (sends HttpOnly cookie automatically)
-  const {
-    data,
-    isLoading,
-    isFetching,
-    isSuccess,
-    isError,
-    isUninitialized,
-  } = useCheckAuthQuery();
+  const { data, isLoading, isFetching, isSuccess, isError, isUninitialized } =
+    useCheckAuthQuery();
 
-  // Combine all loading states
   const isAuthChecking = isLoading || isFetching || isUninitialized;
 
   useEffect(() => {
     if (isSuccess && data) {
       const serverUser = data?.data?.user;
 
-      // 🔒 Security check: mismatch between persisted and server user
+      // 🔒 Mismatch between persisted and server user → force logout
       if (
         serverUser &&
         persistedUser &&
@@ -63,32 +32,26 @@ const AuthProvider = ({ children }) => {
         return;
       }
 
-      // ✅ Set fresh credentials from server
-      dispatch(
-        setCredentials({
-          user: serverUser,
-        })
-      );
+      // ✅ Sync fresh user from server into Redux
+      dispatch(setCredentials({ user: serverUser }));
     }
 
-    // ❌ If auth fails, clear everything
     if (isError) {
       dispatch(logOut());
       persistor.purge();
     }
   }, [isSuccess, isError, data, dispatch, persistedUser]);
 
-  // ⏳ Block rendering until auth check completes
+  // ⏳ Block render until auth check completes
   if (isAuthChecking) {
     return (
-      <div className="loader-container">
-        <div className="spinner" />
-        <p>Checking authorization...</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center gap-3 text-gray-500">
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-[#ff6b00] rounded-full animate-spin" />
+        <p className="text-sm font-medium">Checking authorization...</p>
       </div>
     );
   }
 
-  // ✅ Render app after auth check
   return children;
 };
 

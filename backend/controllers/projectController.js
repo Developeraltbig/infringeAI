@@ -380,7 +380,13 @@ export const startInteractiveProject = async (req, res) => {
     if (!cleanId.startsWith("patent/")) cleanId = `patent/${cleanId}`;
     if (!cleanId.endsWith("/en")) cleanId = `${cleanId}/en`;
 
-    const userId = req.user?.user?._id || req.user?._id;
+    // 🟢 FIX: Use helper and check for missing ID
+    const userId = getUserId(req);
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Missing User ID from token" });
+    }
 
     const project = new Project({
       userId,

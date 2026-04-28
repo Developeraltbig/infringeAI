@@ -1,16 +1,35 @@
 import { apiSlice } from "../api/apiSlice";
 
-const centralAuthUrl = import.meta.env.VITE_PATSERO_BACKEND_URL;
-
 export const authApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    checkAuth: builder.query({
-      query: () => `${centralAuthUrl}/user-auth/check`,
+    // Login
+    login: builder.mutation({
+      query: (credentials) => ({
+        url: "/user-auth/login",
+        method: "POST",
+        body: credentials,
+      }),
     }),
 
+    // Check Auth — protected, requires Bearer token
+    checkAuth: builder.query({
+      query: () => "/user-auth/check",
+      providesTags: ["Auth"],
+    }),
+
+    // Logout — clears HTTP-only cookie on server
     logout: builder.mutation({
       query: () => ({
         url: "/user-auth/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+
+    // Refresh Token — used internally by apiSlice reauth layer
+    refreshToken: builder.mutation({
+      query: () => ({
+        url: "/user-auth/refresh-token",
         method: "POST",
       }),
     }),
@@ -18,6 +37,8 @@ export const authApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
-  useCheckAuthQuery, // This hook is for verifying on page load
+  useLoginMutation,
+  useCheckAuthQuery,
   useLogoutMutation,
+  useRefreshTokenMutation,
 } = authApiSlice;

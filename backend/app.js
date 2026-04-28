@@ -13,15 +13,13 @@ import { consoleLogger, fileLogger } from "./utils/morganLogger.util.js";
 // Import routes
 import patentRoutes from "./routes/patentRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
-
+import authRoutes from "./routes/auth.routes.js";
 const app = express();
 
 // Destructure env variables
 const { CORS_ORIGIN_URL, API_VERSION, NODE_ENV } = env;
 
 // 1. ROUTE PREFIX LOGIC
-// Use BASE_API_URL for local routing.
-// If your sub-part is at "/api/v1", keep it simple.
 const BASE_API_URL = `/api/${API_VERSION}`;
 const allowedOrigins = CORS_ORIGIN_URL?.split(",").map((o) => o.trim()) || [];
 
@@ -44,10 +42,7 @@ app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow Postman or Mobile (no origin)
       if (!origin) return callback(null, true);
-
-      // Check if origin is in our allowed list
       if (allowedOrigins.indexOf(origin) !== -1 || NODE_ENV === "development") {
         callback(null, true);
       } else {
@@ -70,16 +65,17 @@ app.get(`${BASE_API_URL}/health`, (req, res) => {
 /**
  * 3. API ROUTES
  */
-// Use a consistent prefix for all routes in this sub-part.
-// Example: /api/v1/patents
 app.use(`${BASE_API_URL}/patents`, patentRoutes);
 app.use(`${BASE_API_URL}/projects`, projectRoutes);
 
-// You MUST uncomment and use projectRoutes.
-// This is how the frontend will poll for status!
-// app.use(`${BASE_API_URL}/projects`, projectRoutes);
+// ✅ FIX: Moved auth routes ABOVE the 404 handler
+// And used BASE_API_URL to ensure it matches perfectly
+app.use(`${BASE_API_URL}/user-auth`, authRoutes);
 
-// API v1 404 Handler
+/**
+ * 4. 404 AND ERROR HANDLING
+ */
+// API v1 404 Handler (This will now only catch requests that didn't match patents, projects, or user-auth)
 app.use(BASE_API_URL, (req, res, next) => {
   next(createHttpError.NotFound());
 });
