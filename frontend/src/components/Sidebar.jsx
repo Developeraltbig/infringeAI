@@ -44,7 +44,6 @@ const Sidebar = () => {
   const { data: projectsData } = useGetProjectsQuery();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [logoutApi] = useLogoutMutation();
@@ -81,7 +80,7 @@ const Sidebar = () => {
     }
   }, [dispatch, logoutApi, navigate]);
 
-  // Recent projects for history section
+  // Project data for the list under "My Projects"
   const recentProjects = useMemo(() => {
     if (!projectsData?.projects) return [];
     return projectsData.projects
@@ -105,7 +104,6 @@ const Sidebar = () => {
   );
 
   // Credit display values
-  const creditsUsed = TOTAL_CREDITS - credits;
   const creditPercentage = Math.min(
     100,
     Math.max(0, (credits / TOTAL_CREDITS) * 100),
@@ -151,7 +149,7 @@ const Sidebar = () => {
         </div>
 
         {/* PRIMARY NAVIGATION */}
-        <div className="flex flex-col w-full mt-4">
+        <div className="flex flex-col w-full mt-4 flex-1 overflow-y-auto hide-scrollbar">
           <NavItem
             isActive={location.pathname === "/dashboard"}
             isSidebarOpen={isSidebarOpen}
@@ -159,68 +157,56 @@ const Sidebar = () => {
             icon={<LayoutDashboard size={20} />}
             label="New Analysis"
           />
-          <NavItem
-            isActive={location.pathname.includes("projects")}
-            isSidebarOpen={isSidebarOpen}
-            onClick={() => handleNavigation("/dashboard/projects")}
-            icon={<FolderOpen size={20} />}
-            label="My Projects"
-          />
-        </div>
 
-        {/* COLLAPSIBLE HISTORY SECTION */}
-        {isSidebarOpen && (
-          <div className="mt-8 flex-1 flex flex-col overflow-hidden animate-fade-in">
-            <div
-              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-              className="px-8 flex items-center justify-between cursor-pointer group mb-4"
-            >
-              <h3 className="text-[10px] uppercase tracking-[2px] text-gray-500 font-extrabold group-hover:text-gray-300 transition-colors">
-                Recent Analysis
-              </h3>
-              <ChevronDown
-                size={14}
-                className={`text-gray-600 transition-transform ${isHistoryOpen ? "" : "-rotate-90"}`}
-              />
-            </div>
-            <div
-              className={`flex-1 overflow-y-auto hide-scrollbar transition-all duration-500 ${isHistoryOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            >
-              {recentProjects.map((item) => (
-                <div
-                  key={item._id}
-                  onClick={() =>
-                    handleNavigation(
-                      item.status === "completed"
-                        ? `/dashboard/report-view/${item._id}`
-                        : `/dashboard/processing/${item._id}`,
-                    )
-                  }
-                  className="px-8 py-5 cursor-pointer group hover:bg-white/[0.02] border-b border-white/[0.04]"
-                >
-                  <p className="text-[14px] font-bold text-gray-100 group-hover:text-[#ff6b00] truncate mb-1">
-                    {item.displayId}
-                  </p>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase">
-                    <span
-                      className={
-                        item.status === "failed"
-                          ? "text-red-500"
-                          : "text-[#ff6b00]/80"
-                      }
-                    >
-                      {item.mode}
-                    </span>
-                    <span className="opacity-30">•</span>
-                    <span>{item.displayDate}</span>
+          {/* MY PROJECTS SECTION */}
+          <div className="flex flex-col">
+            <NavItem
+              isActive={location.pathname.includes("projects")}
+              isSidebarOpen={isSidebarOpen}
+              onClick={() => handleNavigation("/dashboard/projects")}
+              icon={<FolderOpen size={20} />}
+              label="My Projects"
+            />
+
+            {/* PROJECT LIST (Visible when Sidebar is Open) */}
+            {isSidebarOpen && recentProjects.length > 0 && (
+              <div className="flex flex-col ml-[34px] border-l border-white/10 mt-2 mb-4 animate-fade-in">
+                {recentProjects.map((item) => (
+                  <div
+                    key={item._id}
+                    onClick={() =>
+                      handleNavigation(
+                        item.status === "completed"
+                          ? `/dashboard/report-view/${item._id}`
+                          : `/dashboard/processing/${item._id}`,
+                      )
+                    }
+                    className="pl-8 pr-4 py-4 cursor-pointer group transition-all"
+                  >
+                    <p className="text-[15px] font-black text-white group-hover:text-[#ff6b00] truncate leading-tight">
+                      {item.displayId}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] font-bold mt-1 uppercase tracking-wider">
+                      <span
+                        className={
+                          item.mode === "quick"
+                            ? "text-[#ff4b4b]"
+                            : "text-[#ff6b00]"
+                        }
+                      >
+                        {item.mode}
+                      </span>
+                      <span className="text-gray-600 font-normal">•</span>
+                      <span className="text-gray-500 font-medium lowercase first-letter:uppercase">
+                        {item.displayDate}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-        {/* Always push the credits and profile to the bottom */}
-        <div className="flex-1" />
+        </div>
 
         {/* CREDITS BANNER */}
         {isSidebarOpen ? (
