@@ -22,37 +22,6 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
       <div className="h-px bg-gray-50 w-full mb-2" />
 
       <div className="flex flex-col gap-1 px-1">
-        {/* All links point to the Main Software URL */}
-        {/* <Link
-          to={`${FrontendUrl}/account`}
-          className="flex items-center gap-4 px-4 py-3 text-[15px] text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors group"
-        >
-          <User size={20} className="text-gray-400 group-hover:text-gray-600" />
-          <span>Account Settings</span>
-        </Link>
-
-        <Link
-          to={`${FrontendUrl}/billing`}
-          className="flex items-center gap-4 px-4 py-3 text-[15px] text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors group"
-        >
-          <CreditCard
-            size={20}
-            className="text-gray-400 group-hover:text-gray-600"
-          />
-          <span>Billing & Usage</span>
-        </Link>
-
-        <Link
-          to={`${FrontendUrl}/request-trial`}
-          className="flex items-center gap-4 px-4 py-3 text-[15px] text-gray-600 hover:bg-gray-50 rounded-2xl transition-colors group"
-        >
-          <HelpCircle
-            size={20}
-            className="text-gray-400 group-hover:text-gray-600"
-          />
-          <span>Request Free Trial</span>
-        </Link> */}
-
         <div className="mt-2 pt-2 border-t border-gray-50">
           <button
             type="button"
