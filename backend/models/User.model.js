@@ -5,57 +5,42 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Please provide a name"],
+      required: [true, "Name is required"],
       trim: true,
     },
     email: {
       type: String,
-      required: [true, "Please provide an email"],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
-      // Simple regex to validate email format
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email address",
-      ],
     },
     password: {
       type: String,
-      required: [true, "Please provide a password"],
-      minlength: [6, "Password must be at least 6 characters"],
-      // "select: false" ensures the password is not returned in queries by default
-      // This matches your controller's .select("+password") logic
+      required: [true, "Password is required"],
+      minlength: 6,
       select: false,
     },
     role: {
       type: String,
-      enum: ["user", "admin"], // You can add more roles here if needed
+      enum: ["user", "admin"],
       default: "user",
     },
+    credits: {
+      type: Number,
+      default: 50,
+      min: 0,
+    },
   },
-  {
-    timestamps: true, // Automatically adds createdAt and updatedAt fields
-  },
+  { timestamps: true },
 );
 
-// Mongoose middleware to hash the password before saving a new/updated user
+// Hash password before save
 userSchema.pre("save", async function (next) {
-  // If the password hasn't been modified, skip hashing (e.g., when updating just the email)
-  if (!this.isModified("password")) {
-    return next();
-  }
-
-  try {
-    // Generate a salt and hash the password
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
 const User = mongoose.model("User", userSchema);
-
 export default User;

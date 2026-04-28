@@ -7,13 +7,10 @@ import React, {
 } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
 import {
   LayoutDashboard,
   FolderOpen,
-  ChevronRight,
   ChevronDown,
-  Crown,
   PanelLeft,
   X,
   ChevronUp,
@@ -22,11 +19,17 @@ import {
 
 import logo from "../assets/whiteLogo.png";
 import { toggleSidebar } from "../features/slice/analysisSlice";
-import { selectCurrentUser, logOut } from "../features/auth/authSlice";
+import {
+  selectCurrentUser,
+  selectCredits,
+  logOut,
+} from "../features/auth/authSlice";
 import { apiSlice } from "../features/api/apiSlice";
 import { useGetProjectsQuery } from "../features/api/projectApiSlice";
 import { useLogoutMutation } from "../features/auth/authApiSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
+
+const TOTAL_CREDITS = 50;
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -36,6 +39,7 @@ const Sidebar = () => {
 
   const { isSidebarOpen } = useSelector((state) => state.analysis);
   const user = useSelector(selectCurrentUser);
+  const credits = useSelector(selectCredits);
 
   const { data: projectsData } = useGetProjectsQuery();
 
@@ -43,10 +47,9 @@ const Sidebar = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // API Hooks
   const [logoutApi] = useLogoutMutation();
 
-  // 🟢 Logic: Close profile modal when clicking outside
+  // Close profile modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -60,7 +63,7 @@ const Sidebar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🟢 Logic: Sign out (Server + Client Cleanup)
+  // Sign out
   const handleSignOut = useCallback(async () => {
     setIsLoggingOut(true);
     try {
@@ -68,9 +71,7 @@ const Sidebar = () => {
     } catch (err) {
       console.error("Server logout failed, clearing local state anyway", err);
     } finally {
-      // Reset RTK Query cache
       dispatch(apiSlice.util.resetApiState());
-      // Clear Redux & Storage
       dispatch(logOut());
       localStorage.clear();
       sessionStorage.clear();
@@ -80,7 +81,7 @@ const Sidebar = () => {
     }
   }, [dispatch, logoutApi, navigate]);
 
-  // 🟢 Logic: Regex cleaning for Recent Analysis
+  // Recent projects for history section
   const recentProjects = useMemo(() => {
     if (!projectsData?.projects) return [];
     return projectsData.projects
@@ -92,11 +93,10 @@ const Sidebar = () => {
       .slice(0, 5);
   }, [projectsData]);
 
-  // 🟢 Logic: Navigation helper
+  // Navigation helper
   const handleNavigation = useCallback(
     (path) => {
       navigate(path);
-      // Only close sidebar on mobile (less than 768px)
       if (window.innerWidth < 768 && isSidebarOpen) {
         dispatch(toggleSidebar());
       }
@@ -104,23 +104,14 @@ const Sidebar = () => {
     [navigate, isSidebarOpen, dispatch],
   );
 
-  // 🟢 Logic: Resumable Workflow View Helper
-  const handleViewProject = useCallback(
-    (item) => {
-      if (!item || !item._id) return;
-      const { _id, status } = item;
-
-      if (status === "completed") {
-        navigate(`/dashboard/report-view/${_id}`);
-      } else if (status === "processing" || status === "created") {
-        navigate(`/dashboard/processing/${_id}`);
-      } else if (status === "failed") {
-        // This is handled by the FailureModal in MyProject.jsx
-        navigate(`/dashboard/projects`);
-      }
-    },
-    [navigate],
+  // Credit display values
+  const creditsUsed = TOTAL_CREDITS - credits;
+  const creditPercentage = Math.min(
+    100,
+    Math.max(0, (credits / TOTAL_CREDITS) * 100),
   );
+  const isLowCredits = credits <= 10;
+  const isOutOfCredits = credits === 0;
 
   return (
     <>
@@ -132,7 +123,7 @@ const Sidebar = () => {
         />
       )}
 
-      {/* 🚀 MAIN SIDEBAR: Toggles between 280px and 80px on Desktop */}
+      {/* MAIN SIDEBAR */}
       <aside
         className={`fixed md:relative inset-y-0 left-0 z-50 bg-[#0a0a0a] text-white flex flex-col transition-all duration-300 ease-in-out border-r border-white/5
           ${isSidebarOpen ? "w-[280px] translate-x-0" : "w-[80px] -translate-x-full md:translate-x-0"}
@@ -151,7 +142,6 @@ const Sidebar = () => {
             onClick={() => dispatch(toggleSidebar())}
             className={`text-gray-500 hover:text-white transition-colors ${!isSidebarOpen ? "p-2" : ""}`}
           >
-            {/* Show X on Mobile when open, otherwise show PanelLeft */}
             {isSidebarOpen ? <X size={20} className="md:hidden" /> : null}
             <PanelLeft
               size={22}
@@ -229,39 +219,106 @@ const Sidebar = () => {
             </div>
           </div>
         )}
-        {!isSidebarOpen && <div className="flex-1" />}
+        {/* Always push the credits and profile to the bottom */}
+        <div className="flex-1" />
 
-        {/* UPGRADE PLAN BANNER */}
-        {isSidebarOpen && (
+        {/* CREDITS BANNER */}
+        {isSidebarOpen ? (
+          /* EXPANDED VIEW */
           <div className="mx-4 mb-8 p-6 bg-[#0e1117] border border-white/5 rounded-[24px] flex flex-col gap-6 shadow-xl animate-fade-in">
-            {/* Top Row: Credits Count + Shield Icon */}
             <div className="flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                <span className="text-white text-xl font-black tracking-tight">
-                  40/50
+                <span
+                  className={`text-white text-xl font-black tracking-tight ${
+                    isOutOfCredits
+                      ? "text-red-400"
+                      : isLowCredits
+                        ? "text-yellow-400"
+                        : "text-white"
+                  }`}
+                >
+                  {credits}/{TOTAL_CREDITS}
                 </span>
                 <span className="text-gray-400 text-sm font-bold">
                   Credits Left
                 </span>
               </div>
 
-              {/* The Shield Icon Box */}
-              <div className="w-10 h-10 bg-[#1a1410] rounded-2xl flex items-center justify-center border border-white/5">
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center border border-white/5 ${
+                  isOutOfCredits
+                    ? "bg-red-900/30"
+                    : isLowCredits
+                      ? "bg-yellow-900/20"
+                      : "bg-[#1a1410]"
+                }`}
+              >
                 <ShieldCheck
-                  className="text-[#ff6b00]"
+                  className={
+                    isOutOfCredits
+                      ? "text-red-400"
+                      : isLowCredits
+                        ? "text-yellow-400"
+                        : "text-[#ff6b00]"
+                  }
                   size={20}
                   strokeWidth={2.5}
                 />
               </div>
             </div>
 
-            {/* 📊 The Glowing Progress Bar */}
             <div className="w-full h-2.5 bg-[#1a1f26] rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-[#ff6b00] rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,107,0,0.4)]"
-                // style={{ width: `${Math.min(percentage, 100)}%` }}
-                style={{ width: "90%" }}
+                className={`h-full rounded-full transition-all duration-700 ease-out ${
+                  isOutOfCredits
+                    ? "bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.4)]"
+                    : isLowCredits
+                      ? "bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.35)]"
+                      : "bg-[#ff6b00] shadow-[0_0_15px_rgba(255,107,0,0.4)]"
+                }`}
+                style={{ width: `${creditPercentage}%` }}
               />
+            </div>
+
+            {isOutOfCredits && (
+              <p className="text-red-400 text-[11px] font-bold -mt-2">
+                No credits left — contact sales
+              </p>
+            )}
+            {isLowCredits && !isOutOfCredits && (
+              <p className="text-yellow-400 text-[11px] font-bold -mt-2">
+                Running low on credits
+              </p>
+            )}
+          </div>
+        ) : (
+          /* COLLAPSED VIEW (Just the numbers) */
+          <div
+            className="mx-auto mb-6 flex flex-col items-center justify-center animate-fade-in"
+            title="Credits Left"
+          >
+            <div
+              className={`px-2 py-2 flex flex-col items-center gap-1 rounded-xl border border-white/5 ${
+                isOutOfCredits
+                  ? "bg-red-900/30 text-red-400"
+                  : isLowCredits
+                    ? "bg-yellow-900/20 text-yellow-400"
+                    : "bg-[#1a1410] text-white"
+              }`}
+            >
+              <ShieldCheck
+                size={16}
+                className={
+                  isOutOfCredits
+                    ? "text-red-400"
+                    : isLowCredits
+                      ? "text-yellow-400"
+                      : "text-[#ff6b00]"
+                }
+              />
+              <span className="text-[11px] font-black tracking-tight">
+                {credits}/{TOTAL_CREDITS}
+              </span>
             </div>
           </div>
         )}

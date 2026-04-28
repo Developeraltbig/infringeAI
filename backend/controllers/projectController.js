@@ -1,52 +1,11 @@
 import Project from "../models/Project.js";
+import User from "../models/User.model.js";
 import { analysisQueue } from "../config/queue.config.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Helper to get User ID from your specific nested auth structure
+// Helper to get User ID from nested auth structure
 const getUserId = (req) =>
   req.user?.user?._id || req.user?._id || req.auth?.userId;
-
-console.log("project controller ", getUserId);
-// ---------------------------------------------------------------------------
-// Create a new project (Triggered via API)
-// ---------------------------------------------------------------------------
-
-// export const createProject = async (req, res) => {
-//   try {
-//     const { patentId, mode } = req.body;
-//     const userId = getUserId(req);
-
-//     if (!userId) return res.status(401).json({ error: "User unauthorized" });
-
-//     // 1. Normalize Patent ID for Google/SERP
-//     let normalizedId = patentId.trim().toUpperCase();
-//     if (!normalizedId.startsWith("patent/"))
-//       normalizedId = `patent/${normalizedId}`;
-//     if (!normalizedId.endsWith("/en")) normalizedId = `${normalizedId}/en`;
-
-//     // 2. Create Project
-//     const project = new Project({
-//       userId,
-//       patentId: normalizedId,
-//       mode: mode || "quick",
-//       status: "processing",
-//       currentStep: "initializing",
-//       progress: 5,
-//     });
-//     await project.save();
-
-//     // 3. Add to Queue - ENSURE NAME MATCHES WORKER
-//     await analysisQueue.add("quick-analysis", {
-//       projectId: project._id,
-//       patentId: normalizedId,
-//       type: "quick-analysis",
-//     });
-
-//     res.status(201).json({ success: true, projectId: project._id });
-//   } catch (error) {
-//     res.status(500).json({ error: "Failed to create project" });
-//   }
-// };
 
 // Helper to normalize Patent IDs for SERP/Google
 const normalizeId = (id) => {
@@ -56,10 +15,32 @@ const normalizeId = (id) => {
   return nid;
 };
 
-/**
- * Optimized Create Project API
- * Handles: Quick, Interactive, and Bulk Modes
- */
+// ---------------------------------------------------------------------------
+// Shared credit check + deduction helper
+// Returns { ok: true, user } or { ok: false, res already sent }
+// ---------------------------------------------------------------------------
+const deductCredit = async (userId, count = 1, res) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(401).json({ error: "User not found" });
+    return { ok: false };
+  }
+  if (user.credits < count) {
+    res.status(402).json({
+      error: "INSUFFICIENT_CREDITS",
+      message: "You have no credits left. Please contact the sales team.",
+      credits: user.credits,
+    });
+    return { ok: false };
+  }
+  // Atomically deduct credits
+  await User.findByIdAndUpdate(userId, { $inc: { credits: -count } });
+  return { ok: true, user };
+};
+
+// ---------------------------------------------------------------------------
+// Create Project — Quick / Interactive / Bulk
+// ---------------------------------------------------------------------------
 export const createProject = async (req, res) => {
   try {
     const { patentId, patentIds, mode, selectedCompanies } = req.body;
@@ -68,7 +49,7 @@ export const createProject = async (req, res) => {
     if (!userId) return res.status(401).json({ error: "User unauthorized" });
 
     // ==========================================
-    // 1. BULK MODE LOGIC (Multiple Patents)
+    // 1. BULK MODE
     // ==========================================
     if (mode === "bulk") {
       if (!Array.isArray(patentIds) || patentIds.length === 0) {
@@ -77,12 +58,16 @@ export const createProject = async (req, res) => {
           .json({ error: "patentIds array is required for bulk mode" });
       }
 
+      const count = patentIds.length;
+
+      // Check + deduct credits for all patents at once
+      const creditResult = await deductCredit(userId, count, res);
+      if (!creditResult.ok) return;
+
       const bulkGroupId = uuidv4();
-      const bulkGroupSize = patentIds.length;
       const createdProjects = [];
       const jobsToQueue = [];
 
-      // Create all projects first
       for (const id of patentIds) {
         const nId = normalizeId(id);
         const newProj = new Project({
@@ -90,7 +75,7 @@ export const createProject = async (req, res) => {
           patentId: nId,
           mode: "bulk",
           bulkGroupId,
-          bulkGroupSize,
+          bulkGroupSize: count,
           status: "processing",
           progress: 5,
         });
@@ -107,32 +92,32 @@ export const createProject = async (req, res) => {
         });
       }
 
-      // 🚀 Optimization: Add all jobs to Redis in one single command
       await analysisQueue.addBulk(jobsToQueue);
+
+      // Return updated credits so frontend can sync
+      const updatedUser = await User.findById(userId).select("credits");
 
       return res.status(201).json({
         success: true,
         mode: "bulk",
         bulkGroupId,
         projectIds: createdProjects,
-        message: `${bulkGroupSize} projects queued for parallel analysis`,
+        message: `${count} projects queued for parallel analysis`,
+        credits: updatedUser.credits,
       });
     }
 
     // ==========================================
-    // 2. QUICK / INTERACTIVE LOGIC (Single Patent)
+    // 2. QUICK / INTERACTIVE (Single Patent)
     // ==========================================
     if (!patentId)
       return res.status(400).json({ error: "patentId is required" });
-    const nId = normalizeId(patentId);
 
-    // Validation for Interactive Mode
-    if (
-      mode === "interactive" &&
-      (!selectedCompanies || selectedCompanies.length === 0)
-    ) {
-      // Note: In interactive, we usually start with Discovery first, then select later.
-    }
+    // Check + deduct 1 credit
+    const creditResult = await deductCredit(userId, 1, res);
+    if (!creditResult.ok) return;
+
+    const nId = normalizeId(patentId);
 
     const project = new Project({
       userId,
@@ -145,17 +130,20 @@ export const createProject = async (req, res) => {
 
     await project.save();
 
-    // Trigger Worker
     await analysisQueue.add("quick-analysis", {
       projectId: project._id,
       patentId: nId,
       type: "quick-analysis",
     });
 
+    // Return updated credits so frontend can sync
+    const updatedUser = await User.findById(userId).select("credits");
+
     res.status(201).json({
       success: true,
       projectId: project._id,
       message: "Project created successfully",
+      credits: updatedUser.credits,
     });
   } catch (error) {
     console.error("Create Project Error:", error);
@@ -164,53 +152,13 @@ export const createProject = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// Get project status (Polled by Frontend Processing components)
+// Get Project Status
 // ---------------------------------------------------------------------------
-// export const getProjectStatus = async (req, res) => {
-//   try {
-//     const { projectId } = req.params;
-//     const userId = getUserId(req);
-
-//     // SECURITY: Ensure user owns the project
-//     const project = await Project.findOne({ _id: projectId, userId }).select(
-//       "status currentStep progress failureReason mode",
-//     );
-
-//     if (!project)
-//       return res
-//         .status(404)
-//         .json({ error: "Project not found or access denied" });
-
-//     // UI-Friendly labels for internal steps
-//     const stepNames = {
-//       initializing: "Waking up AI workers...",
-//       quickAnalysis: "Analyzing Patent Claims...",
-//       productSelection: "Searching for Infringing Products...",
-//       productProcessing: "Generating Evidence Charts...",
-//       finalizing: "Finalizing Report...",
-//       completed: "Analysis Complete!",
-//     };
-
-//     res.json({
-//       status: project.status,
-//       currentStep: project.currentStep,
-//       currentStepName: stepNames[project.currentStep] || "Processing...",
-//       progressPercentage:
-//         project.status === "completed" ? 100 : project.progress || 10,
-//       mode: project.mode,
-//       error: project.failureReason,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ error: "Server error fetching status" });
-//   }
-// };
-
 export const getProjectStatus = async (req, res) => {
   try {
     const { projectId } = req.params;
     const userId = getUserId(req);
 
-    // 1. Fetch the primary project
     const project = await Project.findOne({ _id: projectId, userId }).select(
       "status currentStep progress failureReason mode bulkGroupId patentId",
     );
@@ -221,7 +169,6 @@ export const getProjectStatus = async (req, res) => {
         .json({ error: "Project not found or access denied" });
     }
 
-    // --- STEP NAMES MAPPING ---
     const stepNames = {
       initializing: "Waking up AI workers...",
       quickAnalysis: "Analyzing Patent Claims...",
@@ -231,22 +178,17 @@ export const getProjectStatus = async (req, res) => {
       completed: "Analysis Complete!",
     };
 
-    // ============================================================
-    // 🟢 2. BULK MODE LOGIC: CHECK ENTIRE BATCH
-    // ============================================================
+    // BULK MODE
     if (project.mode === "bulk" && project.bulkGroupId) {
-      // Find all projects belonging to this batch
       const allInGroup = await Project.find({
         bulkGroupId: project.bulkGroupId,
         userId,
       }).select("patentId status progress patentData.biblioData");
 
-      // Check if every single patent in the batch is done (completed or failed)
       const isBatchFinished = allInGroup.every(
         (p) => p.status === "completed" || p.status === "failed",
       );
 
-      // Calculate average progress of the entire batch
       const totalProgress = allInGroup.reduce(
         (acc, p) => acc + (p.progress || 0),
         0,
@@ -256,7 +198,6 @@ export const getProjectStatus = async (req, res) => {
       );
 
       return res.json({
-        // 🚀 CRITICAL: We only say "completed" if the WHOLE batch is done
         status: isBatchFinished ? "completed" : "processing",
         currentStep: isBatchFinished ? "completed" : "batchProcessing",
         currentStepName: isBatchFinished
@@ -264,15 +205,12 @@ export const getProjectStatus = async (req, res) => {
           : `Processing Batch (${allInGroup.filter((p) => p.status === "completed").length}/${allInGroup.length} done)`,
         progressPercentage: isBatchFinished ? 100 : batchProgressPercentage,
         mode: "bulk",
-        patentId: project.patentId, // Still return the main one for header
-        // 🚀 This array is used by your SuccessState.jsx to show the grid
+        patentId: project.patentId,
         groupProjects: allInGroup,
       });
     }
 
-    // ============================================================
-    // 🔵 3. QUICK / INTERACTIVE LOGIC (Single Patent)
-    // ============================================================
+    // QUICK / INTERACTIVE
     res.json({
       status: project.status,
       currentStep: project.currentStep,
@@ -290,7 +228,7 @@ export const getProjectStatus = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// Get all projects (For Dashboard History/Sidebar)
+// Get All Projects (Dashboard/History)
 // ---------------------------------------------------------------------------
 export const getAllProjects = async (req, res) => {
   try {
@@ -302,7 +240,6 @@ export const getAllProjects = async (req, res) => {
     const query = { userId };
     const totalCount = await Project.countDocuments(query);
 
-    // Lean query for performance (only fetching what list needs)
     const projects = await Project.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -325,7 +262,7 @@ export const getAllProjects = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// Get project details (For the final ReportView)
+// Get Project Details
 // ---------------------------------------------------------------------------
 export const getProjectDetails = async (req, res) => {
   try {
@@ -333,7 +270,6 @@ export const getProjectDetails = async (req, res) => {
     const userId = getUserId(req);
 
     const project = await Project.findOne({ _id: projectId, userId });
-
     if (!project) return res.status(404).json({ error: "Project not found" });
 
     res.json({ success: true, project });
@@ -343,7 +279,7 @@ export const getProjectDetails = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// Delete project
+// Delete Project
 // ---------------------------------------------------------------------------
 export const deleteProject = async (req, res) => {
   try {
@@ -351,11 +287,7 @@ export const deleteProject = async (req, res) => {
     const userId = getUserId(req);
 
     const result = await Project.findOneAndDelete({ _id: projectId, userId });
-
     if (!result) return res.status(404).json({ error: "Project not found" });
-
-    // Note: In a real production app, you might also want to remove
-    // active jobs from Redis if the project is still processing.
 
     res.json({ success: true, message: "Project deleted successfully" });
   } catch (error) {
@@ -363,24 +295,19 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-// backend/controllers/projectController.js
-// backend/controllers/projectController.js
-
-/**
- * 1. Start Interactive Mode (Initial Step)
- */
+// ---------------------------------------------------------------------------
+// Start Interactive Project
+// ---------------------------------------------------------------------------
 export const startInteractiveProject = async (req, res) => {
   try {
     let { patentId } = req.body;
     if (!patentId)
       return res.status(400).json({ error: "patentId is required" });
 
-    // 🟢 FORCE STABLE FORMAT: patent/US1234567/en
     let cleanId = patentId.trim().toUpperCase();
     if (!cleanId.startsWith("patent/")) cleanId = `patent/${cleanId}`;
     if (!cleanId.endsWith("/en")) cleanId = `${cleanId}/en`;
 
-    // 🟢 FIX: Use helper and check for missing ID
     const userId = getUserId(req);
     if (!userId) {
       return res
@@ -388,9 +315,13 @@ export const startInteractiveProject = async (req, res) => {
         .json({ error: "Unauthorized: Missing User ID from token" });
     }
 
+    // Check + deduct 1 credit
+    const creditResult = await deductCredit(userId, 1, res);
+    if (!creditResult.ok) return;
+
     const project = new Project({
       userId,
-      patentId: cleanId, // Save normalized ID
+      patentId: cleanId,
       mode: "interactive",
       status: "processing",
       currentStep: "initializing",
@@ -400,43 +331,45 @@ export const startInteractiveProject = async (req, res) => {
 
     await analysisQueue.add("interactive-init", {
       projectId: project._id,
-      patentId: cleanId, // Pass normalized ID
+      patentId: cleanId,
       type: "interactive-init",
     });
 
-    res.status(202).json({ success: true, projectId: project._id });
+    const updatedUser = await User.findById(userId).select("credits");
+
+    res.status(202).json({
+      success: true,
+      projectId: project._id,
+      credits: updatedUser.credits,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-/**
- * 2. Save User's Claim Choice (After Image 1)
- */
-
+// ---------------------------------------------------------------------------
+// Select Interactive Claim
+// ---------------------------------------------------------------------------
 export const selectInteractiveClaim = async (req, res) => {
   try {
     const { projectId, claimNumber } = req.body;
-    const userId = req.user?.user?._id || req.user?._id;
+    const userId = getUserId(req);
 
     const project = await Project.findOne({ _id: projectId, userId });
     if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // 1. Find the specific claim the user selected
     const selected = project.allClaims.find((c) => c.number === claimNumber);
     if (!selected)
       return res.status(400).json({ error: "Invalid claim number" });
 
-    // 2. Update status and save the selection
     await Project.findByIdAndUpdate(projectId, {
       $set: {
         selectedClaim: selected,
-        currentStep: "generatingMapping", // Shows Stage 2 loader
+        currentStep: "generatingMapping",
         progress: 10,
       },
     });
 
-    // 3. Trigger the AI Job
     await analysisQueue.add("interactive-mapping", {
       projectId: project._id,
       type: "interactive-mapping",
@@ -451,22 +384,19 @@ export const selectInteractiveClaim = async (req, res) => {
   }
 };
 
-// backend/controllers/projectController.js
-
+// ---------------------------------------------------------------------------
+// Finalize Interactive Targets
+// ---------------------------------------------------------------------------
 export const finalizeInteractiveTargets = async (req, res) => {
   try {
     const { projectId, selectedItems } = req.body;
-    // selectedItems should now look like: [{ company: "Google", product: "Vertex" }, { company: "AWS", product: "Kendra" }]
-
-    const userId = req.user?.user?._id || req.user?._id;
+    const userId = getUserId(req);
 
     const project = await Project.findOne({ _id: projectId, userId });
+    if (!project) return res.status(404).json({ error: "Project not found" });
 
-    // We save the specific objects chosen
     await Project.findByIdAndUpdate(projectId, {
       $set: {
-        // Map to just the product names for your existing logic,
-        // but we will pass the company to the worker too
         selectedCompanies: selectedItems.map((i) => i.company),
         quickModeProducts: selectedItems.map((i) => i.product),
         status: "processing",
@@ -475,13 +405,12 @@ export const finalizeInteractiveTargets = async (req, res) => {
       },
     });
 
-    // 🚀 PASS BOTH TO WORKER
     for (const item of selectedItems) {
       await analysisQueue.add("product-analysis", {
         projectId: project._id,
         patentId: project.patentId,
         productName: item.product,
-        companyName: item.company, // 👈 New field
+        companyName: item.company,
         type: "product-analysis",
       });
     }

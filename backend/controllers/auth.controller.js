@@ -8,7 +8,6 @@ import User from "../models/User.model.js";
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res
         .status(400)
@@ -70,7 +69,6 @@ export const loginUser = async (req, res) => {
 export const refreshToken = async (req, res) => {
   try {
     const token = req.cookies?.refreshToken;
-
     if (!token) {
       return res
         .status(401)
@@ -112,14 +110,41 @@ export const refreshToken = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
-// Check Auth — called by module services to validate a Bearer token.
-// protect middleware runs first and sets req.user before this is reached.
-// Returns the user flat under `data` so verifyUserToken reads
-// response.data.data directly as the user object.
+// Check Auth — returns user including latest credits
 // ---------------------------------------------------------------------------
 export const checkAuth = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: req.user,
-  });
+  try {
+    // Re-fetch user so credits are always fresh from DB
+    const user = await User.findById(
+      req.user._id || req.user?.user?._id,
+    ).select("-password");
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("CheckAuth Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Logout — clears the httpOnly refresh token cookie
+// ---------------------------------------------------------------------------
+export const logoutUser = async (req, res) => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
