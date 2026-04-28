@@ -1,4 +1,4 @@
-name: Deploy AIIP to AWS
+name: Deploy to AWS EC2
 
 on:
   push:
@@ -8,19 +8,19 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to AWS EC2
+    name: Deploy on EC2 via SSH
     runs-on: ubuntu-latest
 
     steps:
       - name: Deploy on EC2 via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT }}
           command_timeout: 30m
-          script_stop: true
           script: |
+            set -e
             cd /home/ubuntu/infringeAI
             ./deploy.sh
