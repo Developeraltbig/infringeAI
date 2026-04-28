@@ -20,6 +20,7 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
       </div>
 
       <div className="h-px bg-gray-50 w-full mb-2" />
+
       <div className="flex flex-col gap-1 px-1">
         <div className="mt-2 pt-2 border-t border-gray-50">
           <button
