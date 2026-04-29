@@ -102,7 +102,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../features/slice/analysisSlice";
-import logo from "../assets/whiteLogo.png";
+import logo from "../assets/Infringe ai (1).svg";
 import { Menu } from "lucide-react";
 
 const Dashboard = memo(() => {

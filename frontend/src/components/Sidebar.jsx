@@ -17,7 +17,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import logo from "../assets/whiteLogo.png";
+import logo from "../assets/Infringe ai (1).svg";
 import { toggleSidebar } from "../features/slice/analysisSlice";
 import {
   selectCurrentUser,

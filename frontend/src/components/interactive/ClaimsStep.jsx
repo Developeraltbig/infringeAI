@@ -1,159 +1,26 @@
-// import React, { memo, useMemo, useState } from "react";
-// import { useSelectClaimMutation } from "../../features/api/interactiveApiSlice";
-// import { ArrowRight } from "lucide-react";
-
-// const ClaimsStep = memo(({ projectId, data, onProceed }) => {
-//   const [selectClaim, { isLoading }] = useSelectClaimMutation();
-//   const [localSelected, setLocalSelected] = useState(null);
-
-//   const independentClaims = useMemo(
-//     () => data?.allClaims?.filter((c) => c.isIndependent) || [],
-//     [data],
-//   );
-
-//   const handleProceed = async () => {
-//     if (!localSelected) return;
-//     try {
-//       await selectClaim({ projectId, claimNumber: localSelected }).unwrap();
-//       onProceed();
-//     } catch (err) {
-//       console.error("Selection failed");
-//     }
-//   };
-
-//   return (
-//     <div className="w-full flex flex-col gap-6 animate-fade-in pb-32">
-//       {/* 1. Patent Header Card */}
-//       <div className="bg-white rounded-[45px] border border-slate-200 p-8 md:p-14 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
-//         <div className="flex-1">
-//           <div className="bg-orange-50 border border-orange-100 px-4 py-1.5 rounded-xl inline-flex items-center mb-6">
-//             <span className="text-[#ff6b00] text-[11px] font-black uppercase tracking-widest font-mono">
-//               ID: {data?.patentId?.replace(/^patent\/|\/en$/gi, "")}
-//             </span>
-//           </div>
-//           <h2 className="text-2xl md:text-3xl font-[1000] text-[#0f172a] mb-3 tracking-tighter">
-//             Choose one claim
-//           </h2>
-//           <p className="text-slate-400 font-bold text-md leading-snug max-w-2xl">
-//             {data?.patentData?.biblioData?.title ||
-//               "AI/ML Mobility related Prediction for Handover"}
-//           </p>
-//         </div>
-
-//         <div className="flex gap-4 self-center lg:self-auto">
-//           <StatBox
-//             label="Total"
-//             value={data?.allClaims?.length}
-//             color="bg-slate-50 text-slate-900"
-//           />
-//           <StatBox
-//             label="Available"
-//             value={independentClaims.length}
-//             color="bg-[#fff7ed] text-[#ff6b00]"
-//             highlight
-//           />
-//           <StatBox
-//             label="Dependent"
-//             value={data?.allClaims?.length - independentClaims.length}
-//             color="bg-slate-50 text-slate-900"
-//           />
-//         </div>
-//       </div>
-
-//       {/* 2. Claims List */}
-//       <div className="flex flex-col gap-5">
-//         {independentClaims.map((claim) => (
-//           <div
-//             key={claim.number}
-//             onClick={() => setLocalSelected(claim.number)}
-//             className={`cursor-pointer bg-white rounded-[40px] p-8 md:p-12 border-2 transition-all duration-500 relative
-//               ${
-//                 localSelected === claim.number
-//                   ? "border-[#ff6b00] shadow-2xl shadow-orange-100/50 scale-[1.01]"
-//                   : "border-slate-200 hover:border-slate-200 hover:shadow-lg"
-//               }`}
-//           >
-//             <div className="flex justify-between items-start mb-8">
-//               <div className="flex items-center gap-8">
-//                 <div
-//                   className={`w-10 h-10 rounded-full border-4 transition-all duration-300 flex items-center justify-center
-//                   ${localSelected === claim.number ? "border-[#ff6b00] bg-[#ff6b00]" : "border-slate-100 bg-white"}`}
-//                 >
-//                   {localSelected === claim.number && (
-//                     <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_10px_white]" />
-//                   )}
-//                 </div>
-//                 <h4 className="text-3xl font-[1000] text-[#0f172a] tracking-tight">
-//                   Claim {claim.number}
-//                 </h4>
-//               </div>
-//               {localSelected === claim.number && (
-//                 <span className="bg-[#ff6b00] text-white text-[11px] font-black uppercase tracking-[2px] px-6 py-2 rounded-full shadow-lg shadow-orange-200">
-//                   Selected
-//                 </span>
-//               )}
-//             </div>
-//             <p className="text-slate-500 font-bold leading-relaxed text-md pl-16 pr-4 italic">
-//               "{claim.text}"
-//             </p>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* 3. Floating Bottom Selection Bar */}
-//       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6 z-[60]">
-//         <div className="bg-[#0f172a] shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[32px] p-6 flex flex-col sm:flex-row justify-between items-center gap-6 border border-white/5 animate-slide-up">
-//           <span className="font-black text-white text-xl px-4">
-//             {localSelected
-//               ? `Claim ${localSelected} is selected`
-//               : "Please select a claim"}
-//           </span>
-//           <button
-//             disabled={!localSelected || isLoading}
-//             onClick={handleProceed}
-//             className="w-full sm:w-auto bg-[#ff6b00] hover:bg-[#e66000] text-white px-12 py-5 rounded-[22px] font-black text-xl flex items-center justify-center gap-3 shadow-xl shadow-orange-500/20 transition-all active:scale-95 disabled:bg-slate-800 disabled:text-slate-500"
-//           >
-//             {isLoading ? "Starting AI..." : "Continue to Mapping"}
-//             <ArrowRight size={24} strokeWidth={3} />
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// });
-
-// const StatBox = ({ label, value, color, highlight }) => (
-//   <div
-//     className={`${color} border ${highlight ? "border-orange-100" : "border-slate-100"} rounded-[32px] w-28 h-28 flex flex-col items-center justify-center shadow-sm`}
-//   >
-//     <span className="text-3xl font-[1000] leading-none mb-1 tracking-tighter">
-//       {value || "0"}
-//     </span>
-//     <span className="text-[10px] font-black uppercase tracking-[2px] opacity-60">
-//       {label}
-//     </span>
-//   </div>
-// );
-
-// export default ClaimsStep;
 import React, { memo, useMemo, useState } from "react";
 import { useSelectClaimMutation } from "../../features/api/interactiveApiSlice";
-import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, FileText } from "lucide-react";
 
 const ClaimsStep = memo(({ projectId, data, onProceed }) => {
   const [selectClaim, { isLoading }] = useSelectClaimMutation();
-  const [localSelected, setLocalSelected] = useState(1);
-  const [expandedId, setExpandedId] = useState(1); // Tracks which claim is expanded
+  const [localSelected, setLocalSelected] = useState(null);
+
+  // UI States for "View More" logic
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
+  const [expandedClaims, setExpandedClaims] = useState({});
 
   const independentClaims = useMemo(
     () => data?.allClaims?.filter((c) => c.isIndependent) || [],
     [data],
   );
 
-  const handleSelect = (claimNum) => {
-    setLocalSelected(claimNum);
-    // Expand when selected, collapse if clicked again
-    setExpandedId(expandedId === claimNum ? null : claimNum);
+  const toggleClaimExpansion = (e, claimNumber) => {
+    e.stopPropagation(); // Prevent selecting the card when just clicking "view more"
+    setExpandedClaims((prev) => ({
+      ...prev,
+      [claimNumber]: !prev[claimNumber],
+    }));
   };
 
   const handleProceed = async () => {
@@ -166,137 +33,167 @@ const ClaimsStep = memo(({ projectId, data, onProceed }) => {
     }
   };
 
+  const patentTitle =
+    data?.patentData?.biblioData?.title || "AI/ML Mobility related Prediction";
+
   return (
-    <div className="w-full flex flex-col gap-5 animate-fade-in pb-10 max-w-8xl mx-auto">
-      {/* 🟢 COMPACT HEADER */}
-      <div className="bg-white rounded-[32px] border border-slate-100 p-6 md:p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex-1">
-          <div className="bg-[#fff7ed] border border-orange-100 px-3 py-1 rounded-md inline-flex items-center mb-3">
-            <span className="text-[#ff6b00] text-[10px] font-black uppercase tracking-widest">
-              {data?.patentId?.replace(/^patent\/|\/en$/gi, "") ||
-                "US9554351B2"}
+    <div className="w-full flex flex-col gap-6 animate-fade-in pb-32">
+      {/* 🟢 Patent Header Card */}
+      <div className="bg-white rounded-[32px] md:rounded-[40px] border border-slate-100 p-6 md:p-10 shadow-sm flex flex-col lg:flex-row justify-between items-start gap-8 transition-all hover:shadow-md">
+        <div className="flex-1 min-w-0">
+          <div className="bg-[#fff7ed] border border-orange-100 px-4 py-1.5 rounded-full inline-flex items-center gap-2 mb-4">
+            <FileText size={14} className="text-[#ff6b00]" />
+            <span className="text-[#ff6b00] text-[11px] font-black uppercase tracking-widest">
+              {data?.patentId?.replace(/^patent\/|\/en$/gi, "") || "PATENT ID"}
             </span>
           </div>
-          <h2 className="text-3xl font-black text-[#0f172a] mb-1 tracking-tighter">
+
+          <h2 className="text-3xl md:text-4xl font-black text-[#0f172a] mb-3 tracking-tighter">
             Choose one claim
           </h2>
-          <p className="text-slate-400 font-bold text-sm leading-tight max-w-md">
-            {data?.patentData?.biblioData?.title ||
-              "Method for handling radio activities of multiple SIM cards..."}
-          </p>
+
+          <div className="relative group">
+            <p
+              className={`text-slate-500 font-bold text-base md:text-lg leading-relaxed transition-all duration-300 ${!isHeaderExpanded ? "line-clamp-2" : ""}`}
+            >
+              {patentTitle}
+            </p>
+            {patentTitle.length > 100 && (
+              <button
+                onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+                className="text-[#ff6b00] text-xs font-black uppercase tracking-widest mt-2 flex items-center gap-1 hover:underline"
+              >
+                {isHeaderExpanded ? "Show Less" : "View Full Description"}
+                {isHeaderExpanded ? (
+                  <ChevronUp size={14} />
+                ) : (
+                  <ChevronDown size={14} />
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-3">
-          <StatBox label="TOTAL" value={data?.allClaims?.length || 15} />
+        {/* Stats Grid - Responsive behavior */}
+        <div className="grid grid-cols-3 gap-3 w-full lg:w-auto shrink-0">
           <StatBox
-            label="AVAILABLE"
-            value={independentClaims.length || 2}
-            highlight
+            label="Total"
+            value={data?.allClaims?.length}
+            color="bg-slate-50 text-slate-900 border-slate-100"
           />
           <StatBox
-            label="DEPENDENT"
-            value={data?.allClaims?.length - independentClaims.length || 13}
+            label="Available"
+            value={independentClaims.length}
+            color="bg-orange-50 text-[#ff6b00] border-orange-100"
+          />
+          <StatBox
+            label="Dependent"
+            value={(data?.allClaims?.length || 0) - independentClaims.length}
+            color="bg-slate-50 text-slate-900 border-slate-100"
           />
         </div>
       </div>
 
-      {/* 🟢 COMPACT & EXPANDABLE CLAIMS LIST */}
+      {/* 🟢 Claims List */}
       <div className="flex flex-col gap-4">
         {independentClaims.map((claim) => {
+          const isExpanded = expandedClaims[claim.number];
           const isSelected = localSelected === claim.number;
-          const isExpanded = expandedId === claim.number;
 
           return (
             <div
               key={claim.number}
-              onClick={() => handleSelect(claim.number)}
-              className={`cursor-pointer bg-white rounded-[30px] p-6 md:p-8 border-2 transition-all duration-300 relative
-                ${isSelected ? "border-[#ff6b00] shadow-lg shadow-orange-100/20" : "border-slate-50 hover:border-slate-200"}`}
+              onClick={() => setLocalSelected(claim.number)}
+              className={`cursor-pointer bg-white rounded-[24px] md:rounded-[35px] p-6 md:p-10 border-2 transition-all duration-300 relative group
+                ${isSelected ? "border-[#ff6b00] shadow-xl shadow-orange-100/30 ring-4 ring-orange-50" : "border-slate-50 hover:border-slate-200"}`}
             >
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-5">
-                  {/* Custom Radio */}
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-4 md:gap-6">
                   <div
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
-                    ${isSelected ? "border-[#ff6b00]" : "border-slate-200 bg-white"}`}
+                    className={`w-7 h-7 md:w-8 md:h-8 rounded-full border-4 transition-all duration-300 flex items-center justify-center
+                      ${isSelected ? "border-[#ff6b00] bg-[#ff6b00] shadow-[0_0_15px_#ff6b00]" : "border-slate-200 bg-white"}`}
                   >
                     {isSelected && (
-                      <div className="w-4 h-4 bg-[#ff6b00] rounded-full shadow-[0_0_8px_#ff6b00]" />
+                      <div className="w-2 h-2 bg-white rounded-full" />
                     )}
                   </div>
-                  <h4 className="text-2xl font-black text-[#0f172a]">
+                  <h4 className="text-xl md:text-2xl font-black text-[#0f172a] tracking-tight">
                     Claim {claim.number}
                   </h4>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {isSelected && (
-                    <span className="bg-[#ff6b00] text-white text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
-                      SELECTED
-                    </span>
-                  )}
-                  {isExpanded ? (
-                    <ChevronUp size={20} className="text-slate-300" />
-                  ) : (
-                    <ChevronDown size={20} className="text-slate-300" />
-                  )}
-                </div>
-              </div>
-
-              <div className="pl-12">
-                <p className="text-[#0f172a] font-bold text-[15px] mb-2 leading-snug">
-                  Technical apparatus and method for wireless signal prediction.
-                </p>
-                <p
-                  className={`text-slate-400 font-medium italic text-[15px] leading-relaxed transition-all duration-500
-                  ${isExpanded ? "" : "line-clamp-2"}`}
-                >
-                  "{claim.text}"
-                </p>
-                {!isExpanded && (
-                  <span className="text-[#ff6b00] text-xs font-bold mt-2 inline-block">
-                    Read full claim...
+                {isSelected && (
+                  <span className="bg-[#ff6b00] text-white text-[10px] font-black uppercase tracking-[2px] px-4 py-1.5 rounded-full shadow-lg shadow-orange-200 animate-in fade-in zoom-in duration-300">
+                    Selected
                   </span>
                 )}
+              </div>
+
+              <div className="pl-11 md:pl-14">
+                <div className="relative">
+                  <p
+                    className={`text-slate-500 font-medium leading-relaxed text-base md:text-lg italic transition-all duration-500 ${!isExpanded ? "line-clamp-3" : ""}`}
+                  >
+                    "{claim.text}"
+                  </p>
+
+                  {claim.text.length > 200 && (
+                    <button
+                      onClick={(e) => toggleClaimExpansion(e, claim.number)}
+                      className="mt-3 text-[#ff6b00] text-xs font-black uppercase tracking-widest flex items-center gap-1 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      {isExpanded ? "Read Less" : "Read More.."}
+                      {isExpanded ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* 🟢 FIXED BOTTOM ACTION BAR */}
-      <div className="bg-white border border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] rounded-[24px] p-5 mt-4 flex justify-between items-center px-8">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-            Selection
-          </span>
-          <span className="font-black text-[#0f172a] text-lg">
-            {localSelected
-              ? `Claim ${localSelected} is active`
-              : "Choose a claim"}
-          </span>
+      {/* 🟢 Bottom Action Bar */}
+      <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:-translate-x-1/2 w-[calc(100%-2rem)] md:w-full md:max-w-4xl z-50">
+        <div className="bg-[#0f172a] border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.4)] rounded-[24px] md:rounded-[30px] p-4 md:p-6 flex flex-col sm:flex-row justify-between items-center gap-4 animate-slide-up">
+          <div className="flex items-center gap-3 px-4">
+            <div
+              className={`w-2 h-2 rounded-full ${localSelected ? "bg-green-400 animate-pulse" : "bg-slate-600"}`}
+            />
+            <span className="font-black text-white text-base md:text-lg tracking-tight">
+              {localSelected
+                ? `Claim ${localSelected} Ready`
+                : "Select a claim to analyze"}
+            </span>
+          </div>
+
+          <button
+            disabled={!localSelected || isLoading}
+            onClick={handleProceed}
+            className="w-full sm:w-auto bg-[#ff6b00] hover:bg-[#e66000] text-white px-8 md:px-12 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-base md:text-lg flex items-center justify-center gap-3 shadow-xl shadow-orange-500/20 transition-all active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
+          >
+            {isLoading ? "Analyzing..." : "Continue to Mapping"}
+            <ArrowRight size={20} strokeWidth={3} />
+          </button>
         </div>
-        <button
-          disabled={!localSelected || isLoading}
-          onClick={handleProceed}
-          className="bg-[#ff6b00] hover:bg-[#e66000] text-white px-8 py-3.5 rounded-2xl font-black text-base flex items-center gap-3 shadow-xl shadow-orange-200 transition-all active:scale-95 disabled:bg-slate-100"
-        >
-          Continue to Mapping <ArrowRight size={20} strokeWidth={3} />
-        </button>
       </div>
     </div>
   );
 });
 
-/* Small Stat Box Component */
-const StatBox = ({ label, value, highlight }) => (
+/* 🟢 Refined StatBox */
+const StatBox = ({ label, value, color }) => (
   <div
-    className={`${highlight ? "bg-[#fff7ed] text-[#ff6b00] border-orange-50" : "bg-slate-50 text-slate-900 border-slate-100"} border rounded-[20px] w-24 h-20 flex flex-col items-center justify-center shadow-sm`}
+    className={`${color} border rounded-[20px] md:rounded-[24px] flex-1 md:w-28 md:h-28 py-3 md:py-0 flex flex-col items-center justify-center shadow-sm transition-transform hover:scale-105 duration-300`}
   >
-    <span className="text-2xl font-black leading-none mb-1 tracking-tighter">
-      {value || "0"}
+    <span className="text-xl md:text-3xl font-[1000] leading-none mb-1 tracking-tighter">
+      {value || "00"}
     </span>
-    <span className="text-[9px] font-black uppercase tracking-widest opacity-50">
+    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[1.5px] opacity-60">
       {label}
     </span>
   </div>
