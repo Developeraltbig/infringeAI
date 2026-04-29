@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "./User.js";
+import User from "./User.model.js";
 
 const MONGO_URI =
   "mongodb+srv://hostingserver:w9joXkQUNeWB2mmk@cluster0.htawuq1.mongodb.net/infringement";
@@ -10,7 +10,7 @@ const seedUser = async () => {
     console.log("Connected to Database");
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: "raj@gmail.com" });
+    const existingUser = await User.findOne({ email: "demo@patprolytics.com" });
     if (existingUser) {
       // If they exist but have no credits, top them up
       if (

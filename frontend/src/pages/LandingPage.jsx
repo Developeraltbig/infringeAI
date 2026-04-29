@@ -29,18 +29,14 @@ const LandingPage = memo(() => {
     }
 
     try {
-      // 1. Call the backend API
       const response = await login({ email, password }).unwrap();
-
-      // 2. Extract the exact data structure returned by your backend controller
-      // Your backend returns: { success: true, message: "...", data: { user, accessToken } }
       const { accessToken, user } = response.data;
 
-      // 3. Save user and token to Redux store
+      // Save user and token to Redux store
       dispatch(setCredentials({ accessToken, user }));
 
-      // 4. Redirect to the dashboard
-      navigate("/dashboard");
+      // 🚀 UPDATE THIS LINE: Use replace: true
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       // 5. Handle errors (e.g., 401 Invalid email or password)
       setErrorMsg(

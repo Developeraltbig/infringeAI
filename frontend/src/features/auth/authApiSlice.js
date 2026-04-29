@@ -9,6 +9,8 @@ export const authApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
+      // 🚀 ADD THIS LINE:
+      invalidatesTags: ["Auth"],
     }),
 
     // Check Auth — protected, requires Bearer token
