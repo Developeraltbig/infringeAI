@@ -1,4 +1,11 @@
-import React, { useMemo, useState, useCallback, memo, useEffect } from "react";
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  memo,
+  useEffect,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -13,7 +20,8 @@ import {
   ChevronDown,
   Filter,
   Loader2,
-  AlertTriangle, // 🟢 Added icon
+  AlertTriangle,
+  Check, // 🟢 Added icon
 } from "lucide-react";
 import {
   useGetProjectsQuery,
@@ -181,6 +189,13 @@ const MyProject = () => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // Add these states to manage the custom dropdowns
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isModeOpen, setIsModeOpen] = useState(false);
+
+  const statusOptions = ["All Status", "Completed", "Processing", "Failed"];
+  const modeOptions = ["All Modes", "Quick", "Bulk", "Interactive"];
+
   // 🟢 NEW STATE: Track failed project to show modal
   const [failureTarget, setFailureTarget] = useState(null);
 
@@ -331,63 +346,123 @@ const MyProject = () => {
           />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6 w-full xl:w-[48%] flex flex-col gap-4 transition-all hover:shadow-md">
+        <div className="bg-white rounded-[28px] shadow-sm border border-gray-100 p-5 md:p-6 w-full xl:w-[48%] flex flex-col gap-4 transition-all hover:shadow-md">
+          {/* Header Section */}
           <div className="flex items-center gap-2">
-            <Filter size={14} className="text-gray-400" />
-            <span className="text-gray-400 text-[11px] font-black uppercase tracking-[1.5px]">
+            <Filter size={14} className="text-gray-300" strokeWidth={3} />
+            <span className="text-gray-400 text-[11px] font-black uppercase tracking-[2px]">
               Search & Filters
             </span>
           </div>
+
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* 1. Search Input */}
             <div className="relative flex-grow group">
               <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#ff6b00]"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#ff6b00] transition-colors"
                 size={18}
               />
               <input
                 type="text"
-                placeholder="Ex: US2015017..."
+                placeholder="Patent ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-[48px] pl-12 pr-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#ff6b00] text-sm font-bold text-gray-700"
+                className="w-full h-[48px] pl-12 pr-4 bg-[#f8fafc] border border-gray-100 rounded-2xl outline-none focus:bg-white focus:border-[#ff6b00] text-[13px] font-bold text-gray-700 transition-all placeholder:text-gray-300"
               />
             </div>
+
+            {/* 2. Custom Dropdowns Row */}
             <div className="flex gap-2">
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-[130px] h-[48px] appearance-none bg-[#ff6b00] text-white text-[13px] font-bold pl-4 pr-10 rounded-xl outline-none cursor-pointer"
+              {/* STATUS DROPDOWN */}
+              <div className="relative w-full sm:w-[135px]">
+                <button
+                  onClick={() => {
+                    setIsStatusOpen(!isStatusOpen);
+                    setIsModeOpen(false);
+                  }}
+                  className={`flex items-center justify-between w-full h-[48px] px-4 bg-white border rounded-2xl text-[13px] font-black tracking-tight transition-all
+            ${isStatusOpen ? "border-[#ff6b00] ring-4 ring-orange-50" : "border-orange-100 hover:border-[#ff6b00]"} 
+            text-[#ff6b00]`}
                 >
-                  {["All Status", "Completed", "Processing", "Failed"].map(
-                    (s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ),
-                  )}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"
-                />
+                  <span className="truncate">{statusFilter}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isStatusOpen && (
+                  <div className="absolute top-[56px] left-0 w-[160px] bg-white border border-gray-100 rounded-[20px] shadow-xl py-2 z-50 animate-in fade-in zoom-in duration-150">
+                    {statusOptions.map((option) => (
+                      <div
+                        key={option}
+                        onClick={() => {
+                          setStatusFilter(option);
+                          setIsStatusOpen(false);
+                        }}
+                        className="flex items-center justify-between px-4 py-3 cursor-pointer group hover:bg-orange-50"
+                      >
+                        <span
+                          className={`text-[13px] font-bold ${statusFilter === option ? "text-[#ff6b00]" : "text-gray-700"}`}
+                        >
+                          {option}
+                        </span>
+                        {statusFilter === option && (
+                          <Check
+                            size={14}
+                            className="text-[#ff6b00] stroke-[3px]"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="relative">
-                <select
-                  value={modeFilter}
-                  onChange={(e) => setModeFilter(e.target.value)}
-                  className="w-[110px] h-[48px] appearance-none bg-gray-900 text-white text-[11px] font-bold pl-4 pr-10 rounded-xl outline-none cursor-pointer"
+
+              {/* MODE DROPDOWN */}
+              <div className="relative w-full sm:w-[135px]">
+                <button
+                  onClick={() => {
+                    setIsModeOpen(!isModeOpen);
+                    setIsStatusOpen(false);
+                  }}
+                  className={`flex items-center justify-between w-full h-[48px] px-4 bg-white border rounded-2xl text-[13px] font-black tracking-tight transition-all
+            ${isModeOpen ? "border-[#ff6b00] ring-4 ring-orange-50" : "border-orange-100 hover:border-[#ff6b00]"} 
+            text-[#ff6b00]`}
                 >
-                  {["All Mode", "Quick", "Bulk", "Interactive"].map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"
-                />
+                  <span className="truncate">{modeFilter}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isModeOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isModeOpen && (
+                  <div className="absolute top-[56px] left-0 w-[160px] bg-white border border-gray-100 rounded-[20px] shadow-xl py-2 z-50 animate-in fade-in zoom-in duration-150">
+                    {modeOptions.map((option) => (
+                      <div
+                        key={option}
+                        onClick={() => {
+                          setModeFilter(option);
+                          setIsModeOpen(false);
+                        }}
+                        className="flex items-center justify-between px-4 py-3 cursor-pointer group hover:bg-orange-50"
+                      >
+                        <span
+                          className={`text-[13px] font-bold ${modeFilter === option ? "text-[#ff6b00]" : "text-gray-700"}`}
+                        >
+                          {option}
+                        </span>
+                        {modeFilter === option && (
+                          <Check
+                            size={14}
+                            className="text-[#ff6b00] stroke-[3px]"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

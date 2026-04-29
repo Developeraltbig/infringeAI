@@ -7,10 +7,10 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
 
   return (
     <div
-      className="w-[250px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden p-2 animate-scale-up"
+      className="w-[250px] bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden p-2 animate-scale-up"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="px-5 py-6">
+      <div className="px-1 py-2">
         <div className="text-[17px] font-bold text-[#1a202c] leading-tight">
           {user?.name || "User"}
         </div>
@@ -19,8 +19,11 @@ export default function UserProfileDropdown({ user, onLogout, isLoggingOut }) {
         </div>
       </div>
 
-      <div className="h-px bg-gray-50 w-full mb-2" />
+      <div className="h-px bg-gray-200 w-full mb-2" />
+
       <div className="flex flex-col gap-1 px-1">
+        {/* All links point to the Main Software URL */}
+
         <div className="mt-2 pt-2 border-t border-gray-50">
           <button
             type="button"

@@ -63,7 +63,7 @@ const LandingPage = memo(() => {
 
         {/* Title */}
         <h1 className="text-3xl font-extrabold text-[#0a0a0a] tracking-tight mb-2">
-          Infringe <span className="text-[#ff6b00]">Portal</span>
+          Infringement <span className="text-[#ff6b00]">Detection</span>
         </h1>
         <p className="text-gray-500 text-sm mb-8">
           Sign in to access your claims analysis.
@@ -141,7 +141,8 @@ const LandingPage = memo(() => {
 
       {/* Footer */}
       <p className="mt-8 text-gray-400 text-xs font-medium">
-        &copy; {new Date().getFullYear()} Infringe AI. All rights reserved.
+        &copy; {new Date().getFullYear()} Infringement Detection. All rights
+        reserved.
       </p>
     </div>
   );
