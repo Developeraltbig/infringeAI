@@ -21,7 +21,7 @@ const Stepper = memo(({ activeStep }) => {
             <React.Fragment key={step.num}>
               <div className="flex items-center gap-3 shrink-0">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black transition-all duration-500 shadow-md
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black transition-all duration-500 shadow-md
                   ${isCompleted || isCurrent ? "bg-[#ff6b00] text-white shadow-orange-200" : "bg-slate-50 text-slate-300 border border-slate-100"}`}
                 >
                   {isCompleted ? <Check size={18} strokeWidth={4} /> : step.num}

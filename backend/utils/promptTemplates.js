@@ -733,7 +733,7 @@ Exact JSON Format Needed:
       "productAnalysis": "[Describe how THIS SPECIFIC PRODUCT implements (or doesn't) this element. Include explicit evidence and reasonable inferences from the web results. Be specific about which product features map to the claim element. If no evidence found, explain what was searched for but not found.]",
       "identified": "[Found | Not Found | Unknown]",
       "supportingEvidence": "[Quote or describe evidence from web results that supports the determination, including implicit/inferential evidence. Always reference the URL by its Source number (Source 1 … Source 8) that matches its index in selectedUrls. Example: 'The product uses machine learning algorithms for prediction (see Source 3)' or 'No product-specific evidence found']",
-      "sourceNumbers": [3, 5]  // Array of source numbers referenced in supportingEvidence
+      "sourceNumbers": [3, 8]  // Array of source numbers referenced in supportingEvidence
     }
   ],
   "infringementScore": "[H | M | L]",

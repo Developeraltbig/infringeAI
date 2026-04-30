@@ -1,76 +1,147 @@
-import React, { memo, useState, lazy, Suspense } from "react";
-import { useGetProjectStatusQuery, useGetProjectDetailsQuery } from "../features/api/projectApiSlice";
+import React, {
+  memo,
+  useState,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+} from "react";
+import {
+  useGetProjectStatusQuery,
+  useGetProjectDetailsQuery,
+} from "../features/api/projectApiSlice";
 import { Loader2 } from "lucide-react";
 import Stepper from "../components/Stepper";
-import InteractiveProcessing from "./interactive/InteractiveProcessing";
+import InteractiveMappingLoader from "./interactive/InteractiveMappingLoader";
+import ProcessingState from "../pages/ProcessingState";
 
 const ClaimsStep = lazy(() => import("./interactive/ClaimsStep"));
 const MappingView = lazy(() => import("./interactive/MappingView"));
-const TargetSelectionStep = lazy(() => import("./interactive/TargetSelectionStep"));
-const ProcessingState = lazy(() => import("../pages/ProcessingState"));
+const TargetSelectionStep = lazy(
+  () => import("./interactive/TargetSelectionStep"),
+);
 const SuccessState = lazy(() => import("./interactive/SuccessState"));
 const FailureState = lazy(() => import("./interactive/FailureState"));
 
 const ProcessingModal = memo(({ projectId, onClose }) => {
   const [showTargetGrid, setShowTargetGrid] = useState(false);
+  const [isInitialBufferDone, setIsInitialBufferDone] = useState(false);
 
-  const { data: status, isError } = useGetProjectStatusQuery(projectId, { pollingInterval: 3000 });
-  const { data: details, isFetching: isDetailsLoading } = useGetProjectDetailsQuery(projectId, {
-    skip: !projectId || !["claimSelection", "targetSelection", "completed", "generatingMapping", "finalizing"].includes(status?.currentStep || status?.status),
+  const { data: status, isError } = useGetProjectStatusQuery(projectId, {
+    pollingInterval: 2000,
   });
 
-  if (!status) return (
-    <div className="p-20 text-center flex flex-col items-center gap-4">
-      <Loader2 className="animate-spin text-[#ff6b00]" size={48} />
-      <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Syncing AI Engine...</p>
-    </div>
+  const { data: details, refetch: refetchDetails } = useGetProjectDetailsQuery(
+    projectId,
+    { skip: !projectId },
   );
+
+  // 🟢 NEW: REDIRECTION LOGIC FOR INTERACTIVE MODE
+  // This calculates the correct Stepper index based on the backend state
+  const activeStepNumber = useMemo(() => {
+    if (!status || status.mode !== "interactive") return 1;
+    const stepMap = {
+      initializing: 1,
+      claimSelection: 2,
+      generatingMapping: 3,
+      targetSelection: 4,
+      finalizing: 5,
+    };
+    return stepMap[status.currentStep] || 2;
+  }, [status]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialBufferDone(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (status?.currentStep) refetchDetails();
+  }, [status?.currentStep, refetchDetails]);
+
+  if (!status)
+    return (
+      <div className="p-20 flex justify-center">
+        <Loader2 className="animate-spin text-[#ff6b00]" size={40} />
+      </div>
+    );
 
   const renderContent = () => {
     if (status.status === "failed" || isError)
       return <FailureState reason={status?.failureReason} onClose={onClose} />;
 
     if (status.status === "completed")
-      return <SuccessState projectId={projectId} data={status} onClose={onClose} />;
+      return (
+        <SuccessState projectId={projectId} data={status} onClose={onClose} />
+      );
 
-    // 🟢 DATA GUARD: If status moved forward but details aren't fetched yet, stay on loader
-    const needsDetails = ["claimSelection", "targetSelection", "generatingMapping", "finalizing"].includes(status.currentStep);
-    if (needsDetails && (!details?.project || isDetailsLoading)) {
-        return (
-            <div className="w-full flex flex-col items-center">
-                <Stepper activeStep={status.currentStep === "claimSelection" ? 2 : 3} />
-                <InteractiveProcessing step="initializing" patentId={status.patentId} status={status} />
-            </div>
-        );
+    // 🟢 SKELETON GUARD (Stage 1 or Resume Initialization)
+    const claimsReady = !!details?.project?.allClaims?.length;
+    if (
+      !isInitialBufferDone ||
+      status.currentStep === "initializing" ||
+      (status.currentStep === "claimSelection" && !claimsReady)
+    ) {
+      return (
+        <div className="w-full flex flex-col items-center">
+          <Stepper activeStep={activeStepNumber} />
+          <InteractiveMappingLoader
+            step="initializing"
+            patentId={status.patentId}
+            status={status}
+          />
+        </div>
+      );
     }
 
+    // 🟢 MAPPING LOADER GUARD (Stage 3)
+    const mappingReady = !!details?.project?.results?.pcrAnalysis?.length;
+    if (
+      status.currentStep === "generatingMapping" ||
+      (status.currentStep === "targetSelection" && !mappingReady)
+    ) {
+      return (
+        <div className="w-full flex flex-col items-center">
+          <Stepper activeStep={activeStepNumber} />
+          <InteractiveMappingLoader
+            step="mapping"
+            patentId={status.patentId}
+            claimNumber={status.selectedClaim?.number}
+            status={status}
+          />
+        </div>
+      );
+    }
+
+    // 🟢 DYNAMIC SWITCH: "Redirects" the user based on currentStep
     switch (status.currentStep) {
-      case "initializing":
-        return <InteractiveProcessing step="initializing" patentId={status.patentId} status={status} />;
-      
       case "claimSelection":
         return (
           <div className="w-full flex flex-col items-center">
-            <Stepper activeStep={2} />
-            <ClaimsStep projectId={projectId} data={details?.project} onProceed={() => {}} />
-          </div>
-        );
-
-      case "generatingMapping":
-        return (
-          <div className="w-full flex flex-col items-center">
-            <Stepper activeStep={3} />
-            <InteractiveProcessing step="mapping" patentId={status.patentId} claimNumber={status.selectedClaim?.number} status={status} />
+            <Stepper activeStep={activeStepNumber} />
+            <ClaimsStep
+              projectId={projectId}
+              data={details?.project}
+              onProceed={() => {}}
+            />
           </div>
         );
 
       case "targetSelection":
         return (
           <div className="w-full flex flex-col items-center">
+            <Stepper activeStep={activeStepNumber} />
             {!showTargetGrid ? (
-              <MappingView data={details?.project} onProceed={() => setShowTargetGrid(true)} />
+              <MappingView
+                data={details?.project}
+                onProceed={() => setShowTargetGrid(true)}
+              />
             ) : (
-              <TargetSelectionStep projectId={projectId} data={details?.project} onBack={() => setShowTargetGrid(false)} />
+              <TargetSelectionStep
+                projectId={projectId}
+                data={details?.project}
+                onBack={() => setShowTargetGrid(false)}
+              />
             )}
           </div>
         );
@@ -78,19 +149,31 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
       case "finalizing":
         return (
           <div className="w-full flex flex-col items-center">
-            <Stepper activeStep={5} />
-            <InteractiveProcessing step="finalizing" patentId={status.patentId} claimNumber={status.selectedClaim?.number} status={status} />
+            <Stepper activeStep={activeStepNumber} />
+            <InteractiveMappingLoader
+              step="finalizing"
+              patentId={status.patentId}
+              claimNumber={status.selectedClaim?.number}
+              status={status}
+            />
           </div>
         );
 
       default:
+        // For Quick/Bulk modes
         return <ProcessingState status={status} />;
     }
   };
 
   return (
     <div className="w-full flex flex-col items-center max-w-[1400px] mx-auto px-4">
-      <Suspense fallback={<div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#ff6b00]" size={48} /></div>}>
+      <Suspense
+        fallback={
+          <div className="p-20 flex justify-center">
+            <Loader2 className="animate-spin text-[#ff6b00]" size={48} />
+          </div>
+        }
+      >
         {renderContent()}
       </Suspense>
     </div>
