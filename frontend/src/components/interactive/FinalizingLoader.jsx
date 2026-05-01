@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 import { Sparkles, Check, Search, BarChart3, Clock } from "lucide-react";
 
 const FinalizingLoader = memo(({ status }) => {
