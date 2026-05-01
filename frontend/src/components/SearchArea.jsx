@@ -775,7 +775,7 @@ const SearchArea = memo(({ onStarted }) => {
   ]);
 
   return (
-    <div className="w-full max-w-5xl flex flex-col items-center gap-5 animate-fade-in px-4">
+    <div className="w-full max-w-6xl flex flex-col items-center gap-5 animate-fade-in px-4">
       {/* 🟠 SEARCH CARD */}
       <div className="w-full bg-white border border-gray-200 rounded-[32px] md:rounded-[45px] shadow-[0_15px_50px_rgba(0,0,0,0.02)] p-4 md:p-6 flex flex-col gap-5 transition-all focus-within:shadow-xl">
         {/* INPUT ROW */}
@@ -836,43 +836,89 @@ const SearchArea = memo(({ onStarted }) => {
         </div>
 
         {/* GUIDANCE BOX */}
-        <div className="w-full bg-white border border-gray-200 rounded-[24px] md:rounded-[32px] p-5 md:p-7 flex flex-col md:flex-row items-center gap-5">
-          <div className="w-full flex flex-col md:flex-row items-center justify-between gap-5 px-2 text-left">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 shrink-0">
-                <FileText size={18} />
+        <div className="w-full bg-white border border-gray-100 rounded-[32px] p-6 md:p-8 transition-all shadow-sm">
+          {mode === "bulk" ? (
+            /* 🟢 BULK MODE: Two-column instruction with specific "OR" divider */
+            <div className="flex flex-col md:flex-row items-center justify-between w-full gap-6 md:gap-10">
+              {/* 1. Left Side: Add one by one */}
+              <div className="flex items-center gap-5 flex-2">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50">
+                  <Plus size={24} strokeWidth={3} />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-black text-[#0f172a] text-[15px] md:text-base leading-none">
+                    Add patents one by one.
+                  </h4>
+                  <p className="text-slate-400 text-[13px] font-bold leading-tight mt-1.5">
+                    Use Add after each patent number. <br /> Add dozens or
+                    hundreds if needed.
+                  </p>
+                </div>
               </div>
-              <p className="text-gray-700 font-bold text-sm md:text-base leading-tight">
-                {mode === "interactive"
-                  ? "Review claims for a single patent."
-                  : mode === "bulk"
-                    ? "Add multiple patents for parallel scanning."
-                    : "Generate a quick chart for one patent."}
-              </p>
-            </div>
-            <div className="hidden md:block w-px h-10 bg-gray-100"></div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 shrink-0">
-                {mode === "interactive" ? (
-                  <Search size={18} />
-                ) : (
-                  <BarChart3 size={18} />
-                )}
+
+              {/* 2. Middle: Vertical "OR" Divider (Image Style) */}
+              <div className="hidden md:flex items-center justify-center relative self-stretch py-2">
+                <div className="w-px h-full bg-slate-100"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-slate-100 rounded-full w-8 h-8 flex items-center justify-center text-[10px] font-black text-slate-600 uppercase tracking-tighter shadow-sm">
+                  OR
+                </div>
               </div>
-              <p className="text-gray-700 font-bold text-sm md:text-base leading-tight">
-                {mode === "interactive"
-                  ? "Pick an independent claim next."
-                  : "View results instantly after processing."}
-              </p>
+
+              {/* 3. Right Side: Upload Excel */}
+              <div className="flex items-center gap-5 flex-1">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-300">
+                  <Upload size={22} strokeWidth={2.5} />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-baseline gap-3">
+                    <h4 className="font-black text-[#0f172a] text-[15px] md:text-base leading-none">
+                      Upload an Excel sheet.
+                    </h4>
+                    <button
+                      onClick={handleDownloadTemplate}
+                      className="text-[#ff6b00] border border-[#ff6b00] p-3  ml-[150px] font-black text-[10px] uppercase tracking-widest hover:underline "
+                    >
+                      Download excel Template
+                    </button>
+                  </div>
+                  <p className="text-slate-400 mr-8 text-[13px] font-bold leading-tight mt-1.5">
+                    First column only: one patent per row, <br /> no header.
+                    Download the template if needed.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-          {mode === "bulk" && (
-            <button
-              onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 text-orange-600 font-bold text-[11px] uppercase tracking-widest hover:underline whitespace-nowrap"
-            >
-              <Download size={14} /> Download Template
-            </button>
+          ) : (
+            /* 🔵 OTHER MODES: Quick / Interactive */
+            <div className="flex flex-col md:flex-row items-center justify-between w-full gap-5 md:gap-10 px-2">
+              <div className="flex items-center gap-5 flex-1">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50 shadow-sm">
+                  <FileText size={24} strokeWidth={2.5} />
+                </div>
+                <p className="text-[#0f172a] font-black text-[15px] leading-tight text-left">
+                  {mode === "interactive"
+                    ? "Enter one patent number to review its claims."
+                    : "Enter one patent number to start a quick chart."}
+                </p>
+              </div>
+
+              <div className="hidden md:block w-px h-10 bg-slate-100"></div>
+
+              <div className="flex items-center gap-5 flex-1">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50 shadow-sm">
+                  {mode === "interactive" ? (
+                    <Search size={24} strokeWidth={2.5} />
+                  ) : (
+                    <BarChart3 size={24} strokeWidth={2.5} />
+                  )}
+                </div>
+                <p className="text-[#0f172a] font-black text-[15px] leading-tight text-left">
+                  {mode === "interactive"
+                    ? "Next, choose one independent claim."
+                    : "After processing, open the generated claim chart."}
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
