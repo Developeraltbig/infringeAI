@@ -842,7 +842,7 @@ const SearchArea = memo(({ onStarted }) => {
             <div className="flex flex-col md:flex-row items-center justify-between w-full gap-6 md:gap-10">
               {/* 1. Left Side: Add one by one */}
               <div className="flex items-center gap-5 flex-2">
-                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-200">
                   <Plus size={24} strokeWidth={3} />
                 </div>
                 <div className="text-left">
@@ -876,7 +876,7 @@ const SearchArea = memo(({ onStarted }) => {
                     </h4>
                     <button
                       onClick={handleDownloadTemplate}
-                      className="text-[#ff6b00] border border-[#ff6b00] p-3  ml-[150px] font-black text-[10px] uppercase tracking-widest hover:underline "
+                      className="text-[#ff6b00] border border-[#ff6b00] p-3 rounded-[10px] ml-[150px] font-black text-[10px] uppercase tracking-widest hover:underline "
                     >
                       Download excel Template
                     </button>
@@ -892,7 +892,7 @@ const SearchArea = memo(({ onStarted }) => {
             /* 🔵 OTHER MODES: Quick / Interactive */
             <div className="flex flex-col md:flex-row items-center justify-between w-full gap-5 md:gap-10 px-2">
               <div className="flex items-center gap-5 flex-1">
-                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50 shadow-sm">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-200 shadow-sm">
                   <FileText size={24} strokeWidth={2.5} />
                 </div>
                 <p className="text-[#0f172a] font-black text-[15px] leading-tight text-left">
@@ -905,7 +905,7 @@ const SearchArea = memo(({ onStarted }) => {
               <div className="hidden md:block w-px h-10 bg-slate-100"></div>
 
               <div className="flex items-center gap-5 flex-1">
-                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-50 shadow-sm">
+                <div className="w-14 h-14 bg-[#fff7ed] rounded-full flex items-center justify-center text-[#ff6b00] shrink-0 border border-orange-200 shadow-sm">
                   {mode === "interactive" ? (
                     <Search size={24} strokeWidth={2.5} />
                   ) : (
