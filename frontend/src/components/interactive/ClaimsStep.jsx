@@ -226,7 +226,15 @@ const ClaimsStep = memo(({ projectId, data, onProceed }) => {
                   </p>
 
                   <div className="text-gray-400 text-[14px] leading-relaxed italic">
-                    "{isExpanded ? claim.text : textPreview}..."
+                    {/* "{isExpanded ? claim.text : textPreview}..." */}
+
+                    <div className="text-slate-400 text-[13px] font-medium italic transition-all duration-500">
+                      "
+                      {isExpanded
+                        ? claim.text
+                        : `${claim.text.slice(0, 250)}...`}
+                      "
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

@@ -21,6 +21,7 @@ export const projectApiSlice = apiSlice.injectEndpoints({
     getProjectDetails: builder.query({
       query: (id) => `/projects/details/${id}`,
       providesTags: (res, err, id) => [{ type: "ProjectDetails", id }],
+      refetchOnMountOrArgChange: true,
     }),
 
     // Delete project

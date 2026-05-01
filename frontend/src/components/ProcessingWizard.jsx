@@ -215,6 +215,7 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
       claimSelection: 2,
       generatingMapping: 3,
       targetSelection: 4,
+      productProcessing: 5,
       finalizing: 5,
     };
     return stepMap[status.currentStep] || 2;

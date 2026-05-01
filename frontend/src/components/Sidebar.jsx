@@ -26,7 +26,10 @@ import {
 } from "../features/auth/authSlice";
 import { apiSlice } from "../features/api/apiSlice";
 import { useGetProjectsQuery } from "../features/api/projectApiSlice";
-import { useLogoutMutation } from "../features/auth/authApiSlice";
+import {
+  useCheckAuthQuery,
+  useLogoutMutation,
+} from "../features/auth/authApiSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
 
 const TOTAL_CREDITS = 50;
@@ -42,6 +45,11 @@ const Sidebar = () => {
   const credits = useSelector(selectCredits);
 
   const { data: projectsData } = useGetProjectsQuery();
+
+  useCheckAuthQuery(undefined, {
+    pollingInterval: 60000, // Optional: check every minute
+    refetchOnFocus: true, // Optional: check when user returns to tab
+  });
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);

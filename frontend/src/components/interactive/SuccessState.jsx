@@ -191,7 +191,7 @@ const SuccessState = memo(({ projectId, data, onClose }) => {
         <div className="w-full flex flex-col items-center">
           <div className="w-full bg-[#fafbfc] border border-gray-100 rounded-[35px] p-10 md:p-16 flex flex-col items-center mb-12 shadow-inner">
             <div className="bg-white border border-gray-300 p-12 rounded-[28px] w-full max-w-2xl text-left shadow-sm transition-transform hover:scale-[1.01]">
-              <span className="text-[11px] font-black text-blue-400 uppercase tracking-[2px] mb-3 block opacity-50">
+              <span className="text-[15px] font-bold text-blue-800 uppercase tracking-[2px] mb-3 block opacity-50">
                 Patent
               </span>
               <h3 className="text-3xl font-black text-gray-900 mb-1 leading-none">
@@ -206,7 +206,7 @@ const SuccessState = memo(({ projectId, data, onClose }) => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleView(projectId)}
-              className="bg-[#ff6b00] hover:bg-[#e66000] text-white px-12 py-5 rounded-2xl font-black text-lg flex items-center gap-3 shadow-xl shadow-orange-200 transition-all active:scale-95 group"
+              className="bg-[#ff6b00] hover:bg-[#e66000] text-white px-12 py-5 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-xl shadow-orange-200 transition-all active:scale-95 group"
             >
               View Chart
               <ArrowRight

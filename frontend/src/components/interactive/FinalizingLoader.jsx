@@ -11,6 +11,28 @@ const FinalizingLoader = memo(({ status }) => {
   const companyString =
     status?.selectedCompanies?.join(", ") || "Samsung Networks, Ericsson";
 
+  // Dynamic Time Calculation
+  const remainingTimeText = useMemo(() => {
+    if (progress >= 98) return "Finishing up...";
+
+    // Set base estimates: 180s for Quick/Interactive, 300s for Bulk
+    const totalEstimatedSeconds = isBulk ? 300 : 180;
+
+    // Calculate remaining seconds based on percentage
+    const remainingSeconds = Math.max(
+      15, // Minimum floor so it doesn't show 0 prematurely
+      Math.round(((100 - progress) / 100) * totalEstimatedSeconds),
+    );
+
+    const mins = Math.floor(remainingSeconds / 60);
+    const secs = remainingSeconds % 60;
+
+    if (mins > 0) {
+      return `~${mins} ${mins === 1 ? "minute" : "minutes"} ${secs > 0 ? `${secs}s` : ""} remaining`;
+    }
+    return `~${remainingSeconds} seconds remaining`;
+  }, [progress, isBulk]);
+
   return (
     <div className="w-full bg-white rounded-[40px] md:rounded-[60px] shadow-[0_20px_70px_rgba(0,0,0,0.03)] border border-gray-50 p-8 md:p-16 flex flex-col items-center text-center animate-scale-up max-w-6xl mx-auto">
       {/* 🟠 TOP BADGE */}
@@ -66,7 +88,12 @@ const FinalizingLoader = memo(({ status }) => {
         </div>
 
         <p className="text-[#0f172a] font-[1000] text-xl tracking-tight italic flex items-center gap-3">
-          <Clock size={20} className="text-[#ff6b00]" /> ~2 minutes remaining
+          <Clock
+            size={22}
+            className="text-[#ff6b00] animate-spin"
+            style={{ animationDuration: "3s" }}
+          />
+          {remainingTimeText}
         </p>
       </div>
 

@@ -221,20 +221,17 @@ const ProcessingState = memo(({ status }) => {
               {projects.map((proj, idx) => (
                 <div
                   key={idx}
-                  className="bg-[#f8fafc] border border-slate-100/50 p-6 rounded-[30px] flex items-center gap-5 transition-all hover:bg-white hover:shadow-xl group"
+                  className="bg-[#f8fafc] border border-slate-300/50 p-6 rounded-[30px] flex items-center gap-5 transition-all hover:bg-white hover:shadow-xl group"
                 >
                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                    <Zap
-                      size={20}
-                      className="text-[#ff6b00] opacity-30 group-hover:opacity-100 transition-all"
-                    />
+                    <Zap size={20} className="text-[#ff6b00] transition-all" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[16px] font-[1000] text-[#0f172a] truncate group-hover:text-[#ff6b00]">
                       {proj.patentId?.replace(/^patent\/|\/en$/gi, "")}
                     </p>
                     <p className="text-slate-400 text-[11px] font-bold">
-                      {proj?.patentData?.biblioData?.title || " "}
+                      {proj?.patentData?.biblioData?.title}
                     </p>
                   </div>
                 </div>
