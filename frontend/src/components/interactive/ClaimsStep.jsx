@@ -192,7 +192,7 @@ const ClaimsStep = memo(({ projectId, data, onProceed }) => {
               className={`bg-white rounded-[30px] border-2 transition-all duration-300 p-8 cursor-pointer relative group ${
                 isSelected
                   ? "border-[#ff6b00] shadow-lg"
-                  : "border-transparent shadow-sm hover:border-gray-200"
+                  : "border-gray-200 shadow-sm hover:border-gray-200"
               }`}
             >
               <div className="flex gap-6">
@@ -201,7 +201,7 @@ const ClaimsStep = memo(({ projectId, data, onProceed }) => {
                   className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-all ${
                     isSelected
                       ? "border-[#ff6b00] bg-[#ff6b00]"
-                      : "border-gray-200 group-hover:border-gray-400"
+                      : "border-gray-300 group-hover:border-gray-400"
                   }`}
                 >
                   {isSelected && (
@@ -255,7 +255,7 @@ const ClaimsStep = memo(({ projectId, data, onProceed }) => {
           <button
             onClick={handleProceed}
             disabled={isLoading}
-            className="bg-[#ff6b00] text-white px-10 py-4 rounded-2xl font-black text-lg flex items-center gap-3 shadow-xl hover:bg-orange-600 transition-all active:scale-95"
+            className="bg-[#ff6b00] text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-xl hover:bg-orange-600 transition-all active:scale-95"
           >
             {isLoading ? "Analyzing..." : "Continue to Mapping"}{" "}
             <ArrowRight size={20} strokeWidth={3} />

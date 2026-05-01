@@ -4,7 +4,7 @@ import { Search, Loader2 } from "lucide-react";
 const ClaimsSkeleton = memo(({ patentId }) => {
   return (
     <div className="w-full max-w-6xl mx-auto animate-fade-in">
-      <div className="bg-white rounded-[45px] border border-gray-100 p-12 md:p-16 shadow-[0_20px_70px_rgba(0,0,0,0.03)] relative">
+      <div className="bg-white rounded-[45px] border border-gray-200 p-12 md:p-16 shadow-[0_20px_70px_rgba(0,0,0,0.03)] relative">
         {/* Top Layout: Text on left, Spinner on right */}
         <div className="flex justify-between items-start mb-12">
           <div className="space-y-4">
@@ -16,7 +16,7 @@ const ClaimsSkeleton = memo(({ patentId }) => {
               </span>
             </div>
 
-            <h2 className="text-5xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
               Loading patent claim data
             </h2>
             <p className="text-gray-400 text-lg font-medium">

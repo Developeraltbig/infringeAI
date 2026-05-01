@@ -398,15 +398,13 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
   return (
     <div className="w-full max-w-5xl flex flex-col items-center gap-5 animate-fade-in px-4">
       {/* 🟠 MAIN SEARCH CARD */}
-      <div className="w-full bg-white border border-gray-100 rounded-[32px] md:rounded-[45px] shadow-[0_15px_50px_rgba(0,0,0,0.02)] p-4 md:p-6 flex flex-col gap-5">
+      <div className="w-full bg-white border border-gray-200 rounded-[32px] md:rounded-[45px] shadow-[0_15px_50px_rgba(0,0,0,0.02)] p-4 md:p-6 flex flex-col gap-5">
         {/* INPUT ROW */}
         <div className="flex flex-col md:flex-row items-center gap-3">
-          <div className="flex-1 w-full bg-gray-50/60 border border-gray-100 rounded-full flex items-center px-5 h-14 md:h-16 transition-all focus-within:bg-white focus-within:border-orange-500/20 focus-within:shadow-sm">
+          <div className="flex-1 w-full bg-gray-50/60 border border-gray-300 rounded-full flex items-center px-5 h-14 md:h-16 transition-all focus-within:bg-white focus-within:border-orange-500/20 focus-within:shadow-sm">
             <div className="w-9 h-9 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-orange-600 shadow-sm shrink-0">
               {mode === "bulk" && <Plus size={18} strokeWidth={2.5} />}
-              {mode === "quick" && (
-                <FileText size={18} className="opacity-40" />
-              )}
+              {mode === "quick" && <FileText size={18} />}
               {mode === "interactive" && (
                 <Sparkles size={18} fill="currentColor" />
               )}
@@ -441,7 +439,7 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
                 </button>
                 <button
                   onClick={() => fileInputRef.current.click()}
-                  className="h-14 md:h-16 bg-white border border-gray-200 text-gray-700 px-6 rounded-2xl md:rounded-[24px] font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all flex-1 md:flex-none whitespace-nowrap"
+                  className="h-14 md:h-16 bg-white border border-gray-300 text-gray-700 px-6 rounded-2xl md:rounded-[24px] font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all flex-1 md:flex-none whitespace-nowrap"
                 >
                   <Upload size={18} /> Upload Excel
                 </button>
@@ -450,9 +448,9 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
               <button
                 onClick={handleExecute}
                 disabled={isLoading}
-                className="h-14 md:h-16 bg-orange-600 text-white px-10 md:px-12 rounded-2xl md:rounded-[28px] font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all w-full"
+                className="h-14 md:h-16 bg-orange-600 text-white px-5 md:px-6 rounded-2xl md:rounded-[28px] font-bold text-lg flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all w-full"
               >
-                {mode === "interactive" ? "Begin" : "Analyze"}
+                Analyze
                 <ArrowRight size={20} strokeWidth={2.5} />
               </button>
             )}
@@ -460,7 +458,7 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
         </div>
 
         {/* HELP SECTION */}
-        <div className="w-full bg-white border border-gray-50 rounded-[24px] md:rounded-[32px] p-5 md:p-7 flex flex-col md:flex-row items-center gap-5">
+        <div className="w-full bg-white border border-gray-200 rounded-[24px] md:rounded-[32px] p-5 md:p-7 flex flex-col md:flex-row items-center gap-5">
           {mode === "bulk" ? (
             <div className="w-full flex flex-col md:flex-row items-center gap-6">
               <div className="flex-2 flex items-center gap-4">
@@ -479,14 +477,14 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
               </div>
 
               <div className="hidden md:flex items-center justify-center h-12 w-px bg-gray-100 relative mx-2">
-                <span className="absolute bg-white border border-gray-100 rounded-full px-2 py-0.5 text-[9px] font-bold text-gray-300 uppercase">
+                <span className="absolute bg-white border border-gray-100 rounded-full px-2 py-1 text-[12px] font-bold text-gray-600 uppercase">
                   OR
                 </span>
               </div>
 
               <div className="flex-2 flex flex-col lg:flex-row items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600 shrink-0">
+                  <div className="w-10 h-10 bg-orange-10 rounded-xl flex items-center justify-center text-orange-600 shrink-0">
                     <Upload size={18} />
                   </div>
                   <div className="text-left">
@@ -501,7 +499,7 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
                 </div>
                 <button
                   onClick={handleDownloadTemplate}
-                  className="flex items-center gap-2 border border-orange-600/10 text-orange-600 px-4 py-2.5 rounded-xl font-bold text-xs bg-orange-50/50 hover:bg-orange-50 transition-all whitespace-nowrap"
+                  className="flex items-center gap-2 border border-orange-600/40 text-orange-600 px-4 py-2.5 rounded-xl font-bold text-xs bg-orange-50/50 hover:bg-orange-50 transition-all whitespace-nowrap"
                 >
                   <Download size={14} /> Download Excel Template
                 </button>
@@ -545,7 +543,7 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
               {bulkPatents.map((p, idx) => (
                 <div
                   key={idx}
-                  className="bg-white border border-gray-200 rounded-full px-5 py-2.5 flex items-center gap-3 shadow-sm font-bold text-gray-700 text-sm group hover:border-orange-500/30 transition-all"
+                  className="bg-white border border-gray-300 rounded-full px-5 py-2.5 flex items-center gap-3 shadow-sm font-bold text-gray-700 text-sm group hover:border-orange-500/30 transition-all"
                 >
                   {p}
                   <button
@@ -570,7 +568,8 @@ const SearchArea = memo(({ onStarted, onCreditCheck }) => {
                 onClick={handleExecute}
                 className="h-14 md:h-16 bg-orange-600 text-white px-10 md:px-12 rounded-[22px] md:rounded-[26px] font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all"
               >
-                Analyze {bulkPatents.length}{" "}
+                Analyze
+                {/* {bulkPatents.length}{" "} */}
                 {bulkPatents.length === 1 ? "patent" : "patents"}
                 <ArrowRight size={20} strokeWidth={2.5} />
               </button>

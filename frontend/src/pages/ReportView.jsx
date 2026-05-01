@@ -243,7 +243,7 @@ const ReportView = () => {
                         href={activeResult.urlMapping?.[String(num)] || "#"}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-white border border-gray-100 rounded-xl flex items-center justify-between p-2.5 shadow-sm hover:border-orange-300 transition-colors group"
+                        className="bg-white border border-gray-100 rounded-xl flex items-center justify-between p-3 shadow-sm hover:border-orange-300 transition-colors group"
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
                           <span className="text-[11px] font-bold text-gray-700">
