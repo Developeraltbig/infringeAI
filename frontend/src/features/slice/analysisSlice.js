@@ -5,7 +5,7 @@ const initialState = {
   currentView: "project",
   mode: "quick",
   bulkPatents: [], // Array of patent ID chips
-  tempCredits: 100, // Initial credit balance
+  tempCredits: 50, // Initial credit balance
 };
 
 const analysisSlice = createSlice({

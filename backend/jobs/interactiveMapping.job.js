@@ -40,43 +40,41 @@ export const executeInteractiveMapping = async (job, projectId) => {
     const discoveryResponse = await aiService.generateResponse(discoveryPrompt);
     const discoveryParsed = safeJsonParse(discoveryResponse);
 
+    console.log("discoveryParsed", discoveryParsed);
+
     // Flexible parsing for both naming conventions
     const rawList =
       discoveryParsed.candidates || discoveryParsed.targetCompanies || [];
 
-    logger.info(rawList);
-    console.log(
-      "product name backend ---------------------------------------------------------------------------->",
-      rawList,
-    );
+    console.log("Raw List:", rawList);
 
-    // const companies = rawList.map((item) => ({
-    //   company: item.company || item.name || "Unknown",
-    //   product: item.product || item.productName || "Flagship Offering",
-    //   description: item.description || item.reasoning || "",
-    // }));
+    const companies = rawList.map((item) => ({
+      company: item.company || item.name || "Unknown",
+      product: item.product || item.productName || "Flagship Offering",
+      description: item.description || item.reasoning || "",
+    }));
 
     // Inside executeInteractiveMapping
-    const companies = rawList.map((item) => {
-      // Check for many possible keys the AI might return
-      const extractedProduct =
-        item.product ||
-        item.productName ||
-        item.target_product ||
-        item.offering ||
-        item.service;
+    // const companies = rawList.map((item) => {
+    //   // Check for many possible keys the AI might return
+    //   const extractedProduct =
+    //     item.product ||
+    //     item.productName ||
+    //     item.target_product ||
+    //     item.offering ||
+    //     item.service;
 
-      return {
-        company: item.company || item.name || "Unknown",
-        // If no product is found, take the first 4 words of the description as a "Product Title"
-        product:
-          extractedProduct && extractedProduct !== "Flagship Offering"
-            ? extractedProduct
-            : item.description?.split(" ").slice(0, 4).join(" ") + "..." ||
-              "Flagship Offering",
-        description: item.description || item.reasoning || "",
-      };
-    });
+    //   return {
+    //     company: item.company || item.name || "Unknown",
+    //     // If no product is found, take the first 4 words of the description as a "Product Title"
+    //     product:
+    //       extractedProduct && extractedProduct !== "Flagship Offering"
+    //         ? extractedProduct
+    //         : item.description?.split(" ").slice(0, 4).join(" ") + "..." ||
+    //           "Flagship Offering",
+    //     description: item.description || item.reasoning || "",
+    //   };
+    // });
 
     console.log(`[Job ${job.id}] AI generated ${companies.length} companies.`);
     logger.info(`[Job ${job.id}] AI generated ${companies.length} companies.`);

@@ -187,7 +187,6 @@
 // });
 
 // export default ProcessingModal;
-
 import React, {
   memo,
   useState,
@@ -195,6 +194,7 @@ import React, {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import {
   useGetProjectStatusQuery,
@@ -206,7 +206,7 @@ import InteractiveMappingLoader from "./interactive/InteractiveMappingLoader";
 import FinalizingLoader from "./interactive/FinalizingLoader";
 import ProcessingState from "../pages/ProcessingState";
 
-// Lazy views
+// Lazy loaded views for code splitting
 const ClaimsStep = lazy(() => import("./interactive/ClaimsStep"));
 const MappingView = lazy(() => import("./interactive/MappingView"));
 const TargetSelectionStep = lazy(
@@ -219,22 +219,24 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
   const [showTargetGrid, setShowTargetGrid] = useState(false);
   const [isInitialBufferDone, setIsInitialBufferDone] = useState(false);
 
-  // 1. Polling and Data fetching
+  // 🟢 Track last step to prevent infinite refetch loops
+  const lastStepRef = useRef("");
+
+  // 1. Status Polling (Every 3 seconds)
   const { data: status, isError } = useGetProjectStatusQuery(projectId, {
-    pollingInterval: 2000,
+    pollingInterval: 3000,
   });
 
-  // 🟢 FIX 1: Destructure 'isFetching' as 'isDetailsLoading'
+  // 2. Details Query - Destructure isFetching as isDetailsLoading
   const {
     data: details,
     refetch: refetchDetails,
     isFetching: isDetailsLoading,
   } = useGetProjectDetailsQuery(projectId, {
     skip: !projectId,
-    refetchOnMountOrArgChange: true,
   });
 
-  // 2. Step Mapper for Interactive Stepper
+  // 🟢 3. STEP MAPPER: Directs the Stepper circle highlighting
   const activeStepNumber = useMemo(() => {
     if (!status || status.mode !== "interactive") return 1;
     const stepMap = {
@@ -248,15 +250,19 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
     return stepMap[status.currentStep] || 2;
   }, [status]);
 
-  // 3. 2-Second Visual Buffer (Interactive Only)
+  // 4. Initial 2-Second skeleton buffer timer
   useEffect(() => {
     setIsInitialBufferDone(false);
     const timer = setTimeout(() => setIsInitialBufferDone(true), 2000);
     return () => clearTimeout(timer);
   }, [projectId]);
 
+  // 🟢 5. STABILITY FIX: Trigger refetch only when backend step actually moves forward
   useEffect(() => {
-    if (status?.currentStep) refetchDetails();
+    if (status?.currentStep && status.currentStep !== lastStepRef.current) {
+      refetchDetails();
+      lastStepRef.current = status.currentStep;
+    }
   }, [status?.currentStep, refetchDetails]);
 
   if (!status)
@@ -267,25 +273,26 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
     );
 
   const renderContent = () => {
-    // 🛑 TERMINAL STATES
+    // 🛑 TERMINAL STATES (Fail/Success)
     if (status.status === "failed" || isError)
       return <FailureState reason={status?.failureReason} onClose={onClose} />;
+
     if (status.status === "completed")
       return (
         <SuccessState projectId={projectId} data={status} onClose={onClose} />
       );
 
-    // 🟢 BRANCH 1: QUICK & BULK MODE
+    // 🟢 BRANCH 1: QUICK & BULK (Direct to Processing Modal)
     if (status.mode === "quick" || status.mode === "bulk") {
       return <ProcessingState status={status} />;
     }
 
-    // 🟠 BRANCH 2: INTERACTIVE MODE
+    // 🟠 BRANCH 2: INTERACTIVE (With specific loaders)
     if (status.mode === "interactive") {
       const claimsReady = !!details?.project?.allClaims?.length;
       const mappingReady = !!details?.project?.results?.pcrAnalysis?.length;
 
-      // 🛡️ Guard A: Initial Skeleton
+      // 🛡️ Guard A: Initial Skeleton (Step 2 Prep)
       if (
         !isInitialBufferDone ||
         status.currentStep === "initializing" ||
@@ -300,9 +307,8 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
         );
       }
 
-      // 🛡️ Guard B: Mapping Progress
-      // 🟢 FIX 2: Check 'isDetailsLoading' here. This prevents switching to MappingView
-      // until the forced refetch actually brings the new data into the store.
+      // 🛡️ Guard B: Mapping Progress (Step 3/4 Transition)
+      // Checks both data presence AND if the network is currently fetching
       if (
         status.currentStep === "generatingMapping" ||
         (status.currentStep === "targetSelection" &&
@@ -321,7 +327,7 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
         );
       }
 
-      // Routing for Interactive Steps
+      // 🚀 MAIN WORKFLOW ROUTING
       switch (status.currentStep) {
         case "claimSelection":
           return (
@@ -331,6 +337,7 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
               onProceed={() => {}}
             />
           );
+
         case "targetSelection":
           return !showTargetGrid ? (
             <MappingView
@@ -344,10 +351,11 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
               onBack={() => setShowTargetGrid(false)}
             />
           );
+
         case "productProcessing":
-          return <FinalizingLoader status={status} />;
         case "finalizing":
           return <FinalizingLoader status={status} />;
+
         default:
           return (
             <InteractiveMappingLoader
@@ -364,12 +372,14 @@ const ProcessingModal = memo(({ projectId, onClose }) => {
 
   return (
     <div className="w-full flex flex-col items-center max-w-[1400px] mx-auto px-4 pb-20">
+      {/* 🟢 GLOBAL PERSISTENT STEPPER */}
       {status.mode === "interactive" && status.status !== "completed" && (
         <div className="w-full animate-fade-in mb-8">
           <Stepper activeStep={activeStepNumber} />
         </div>
       )}
 
+      {/* Dynamic View Area */}
       <Suspense
         fallback={
           <div className="p-20 flex justify-center">

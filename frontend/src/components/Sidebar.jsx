@@ -27,7 +27,7 @@ import {
 import { apiSlice } from "../features/api/apiSlice";
 import { useGetProjectsQuery } from "../features/api/projectApiSlice";
 import {
-  useCheckAuthQuery,
+  // useCheckAuthQuery,
   useLogoutMutation,
 } from "../features/auth/authApiSlice";
 import UserProfileDropdown from "./UserProfileDropdown";
@@ -46,10 +46,10 @@ const Sidebar = () => {
 
   const { data: projectsData } = useGetProjectsQuery();
 
-  useCheckAuthQuery(undefined, {
-    pollingInterval: 60000, // Optional: check every minute
-    refetchOnFocus: true, // Optional: check when user returns to tab
-  });
+  // useCheckAuthQuery(undefined, {
+  //   pollingInterval: 60000, // Optional: check every minute
+  //   // refetchOnFocus: true, // Optional: check when user returns to tab
+  // });
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);

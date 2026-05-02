@@ -514,10 +514,12 @@ Your entire response MUST be ONLY a single, raw JSON object in the following for
   \"targetCompanies\": [
     {
       \"name\": \"Company Name\",
+      \"product\": \" Company Product Name\",
       \"reasoning\": \"ProductX's specific feature for claim element (max 10 words)\"
     },
     {
       \"name\": \"Another Company\",
+      \"product\": \"Another Company product Name\",
       \"reasoning\": \"ProductY implements claimed method via feature (max 10 words)\"
     }
   ]

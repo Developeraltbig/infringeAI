@@ -35,9 +35,9 @@ const verifyUserToken = async (req, _res, next) => {
         throw new ApiError(401, "Unauthorized: Could not retrieve user data");
       }
 
-      console.log("==== WHAT CORE AUTH RETURNED ====");
-      console.log(JSON.stringify(user, null, 2));
-      console.log("=================================");
+      // console.log("==== WHAT CORE AUTH RETURNED ====");
+      // console.log(JSON.stringify(user, null, 2));
+      // console.log("=================================");
 
       // 4. Attach user to request for downstream controllers
       req.user = user;

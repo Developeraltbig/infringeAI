@@ -712,67 +712,74 @@ const SearchArea = memo(({ onStarted }) => {
   /**
    * 🚀 Execution Logic with Credit Guard
    */
-  const handleExecute = useCallback(async () => {
-    const id = inputValue.trim().toUpperCase();
+  const handleExecute = useCallback(
+    async (e) => {
+      if (e) e.preventDefault();
 
-    // basic validation
-    if (mode !== "bulk" && !id)
-      return toast.error("Please enter a patent number.");
-    if (mode === "bulk" && bulkPatents.length === 0)
-      return toast.error("Add patents to the list first.");
+      const id = inputValue.trim().toUpperCase();
 
-    // 🟢 2. Calculate Required Credits (1 per patent as per your Backend)
-    const count = mode === "bulk" ? bulkPatents.length : 1;
-    const required = count;
+      // basic validation
+      if (mode !== "bulk" && !id)
+        return toast.error("Please enter a patent number.");
+      if (mode === "bulk" && bulkPatents.length === 0)
+        return toast.error("Add patents to the list first.");
 
-    // 🟢 3. Frontend Pre-check
-    if (userCredits < required) {
-      setNeededCredits(required);
-      setIsModalOpen(true);
-      return;
-    }
+      // 🟢 2. Calculate Required Credits (1 per patent as per your Backend)
+      const count = mode === "bulk" ? bulkPatents.length : 1;
+      const required = count;
 
-    try {
-      const payload =
-        mode === "bulk"
-          ? { mode, patentIds: bulkPatents }
-          : { mode, patentId: id };
-
-      const res =
-        mode === "interactive"
-          ? await startInteractive(id).unwrap()
-          : await startAnalysis(payload).unwrap();
-
-      // 🟢 4. Sync Redux Store (Backend returns balance in 'credits' key)
-      if (res?.credits !== undefined) {
-        dispatch(updateUserCredits(res.credits));
-      }
-
-      const targetId = res.projectId || (res.projectIds && res.projectIds[0]);
-      if (targetId) onStarted(targetId);
-
-      // Reset
-      setInputValue("");
-      if (mode === "bulk") dispatch(clearBulkPatents());
-    } catch (err) {
-      // 🟢 5. Handle Backend 402 (Insufficient Credits)
-      if (err?.status === 402) {
+      // 🟢 3. Frontend Pre-check
+      if (userCredits < required) {
         setNeededCredits(required);
         setIsModalOpen(true);
-      } else {
-        toast.error(err?.data?.error || "Execution failed. Please try again.");
+        return;
       }
-    }
-  }, [
-    mode,
-    bulkPatents,
-    inputValue,
-    userCredits,
-    startAnalysis,
-    startInteractive,
-    dispatch,
-    onStarted,
-  ]);
+
+      try {
+        const payload =
+          mode === "bulk"
+            ? { mode, patentIds: bulkPatents }
+            : { mode, patentId: id };
+
+        const res =
+          mode === "interactive"
+            ? await startInteractive(id).unwrap()
+            : await startAnalysis(payload).unwrap();
+
+        // 🟢 4. Sync Redux Store (Backend returns balance in 'credits' key)
+        if (res?.credits !== undefined) {
+          dispatch(updateUserCredits(res.credits));
+        }
+
+        const targetId = res.projectId || (res.projectIds && res.projectIds[0]);
+        if (targetId) onStarted(targetId);
+
+        // Reset
+        setInputValue("");
+        if (mode === "bulk") dispatch(clearBulkPatents());
+      } catch (err) {
+        // 🟢 5. Handle Backend 402 (Insufficient Credits)
+        if (err?.status === 402) {
+          setNeededCredits(required);
+          setIsModalOpen(true);
+        } else {
+          toast.error(
+            err?.data?.error || "Execution failed. Please try again.",
+          );
+        }
+      }
+    },
+    [
+      mode,
+      bulkPatents,
+      inputValue,
+      userCredits,
+      startAnalysis,
+      startInteractive,
+      dispatch,
+      onStarted,
+    ],
+  );
 
   return (
     <div className="w-full max-w-6xl flex flex-col items-center gap-5 animate-fade-in px-4">
@@ -824,7 +831,7 @@ const SearchArea = memo(({ onStarted }) => {
               </>
             ) : (
               <button
-                onClick={handleExecute}
+                onClick={(e) => handleExecute(e)}
                 disabled={isLoading}
                 className="h-14 md:h-16 bg-orange-600 text-white px-8 md:px-10 rounded-2xl md:rounded-[28px] font-[1000] text-lg flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all w-full md:w-auto"
               >
@@ -949,7 +956,7 @@ const SearchArea = memo(({ onStarted }) => {
                 Clear All
               </button>
               <button
-                onClick={handleExecute}
+                onClick={(e) => handleExecute(e)}
                 className="h-14 md:h-16 bg-orange-600 text-white px-10 md:px-12 rounded-[22px] md:rounded-[26px] font-[1000] text-lg flex items-center justify-center gap-3 shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all"
               >
                 Analyze {bulkPatents.length}{" "}

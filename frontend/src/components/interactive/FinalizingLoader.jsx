@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from "react";
 import { Sparkles, Check, Search, BarChart3, Clock } from "lucide-react";
 
-const FinalizingLoader = memo(({ status }) => {
+const FinalizingLoader = memo(({ status, isBulk }) => {
   const progress = status?.progressPercentage || 58;
   const cleanId =
     status?.patentId?.replace(/^patent\/|\/en$/gi, "") || "Analyzing...";

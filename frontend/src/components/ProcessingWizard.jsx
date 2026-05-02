@@ -6,15 +6,17 @@
 //   useMemo,
 //   useEffect,
 // } from "react";
-// import { useParams, useNavigate } from "react-router-dom"; // 🟢 Added for routing functionality
+// import { useParams, useNavigate } from "react-router-dom";
 // import {
 //   useGetProjectStatusQuery,
 //   useGetProjectDetailsQuery,
 // } from "../features/api/projectApiSlice";
 // import { Loader2 } from "lucide-react";
 // import Stepper from "./Stepper";
+// import InteractiveMappingLoader from "./interactive/InteractiveMappingLoader";
+// import FinalizingLoader from "./interactive/FinalizingLoader";
 
-// // Lazy loaded views (Imports kept exactly as provided)
+// // Views
 // const ClaimsStep = lazy(() => import("./interactive/ClaimsStep"));
 // const MappingView = lazy(() => import("./interactive/MappingView"));
 // const TargetSelectionStep = lazy(
@@ -27,43 +29,45 @@
 // const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
 //   const navigate = useNavigate();
 //   const { projectId: paramId } = useParams();
-
-//   // 🟢 1. ROBUST ID DETECTION: Works both as a Prop (New Analysis) and a URL Param (Resume from Vault)
 //   const projectId = propId || paramId;
 
 //   const [showTargetGrid, setShowTargetGrid] = useState(false);
+//   const [isSkeletonBufferDone, setIsSkeletonBufferDone] = useState(false);
 
-//   // 🔌 2. API SYNC
 //   const {
 //     data: status,
 //     isError,
 //     error: apiError,
 //   } = useGetProjectStatusQuery(projectId, {
 //     skip: !projectId,
-//     pollingInterval: 3000,
+//     pollingInterval: 2500,
 //   });
 
-//   const { data: details } = useGetProjectDetailsQuery(projectId, {
-//     skip:
-//       !projectId ||
-//       !["claimSelection", "targetSelection", "completed"].includes(
-//         status?.currentStep || status?.status,
-//       ),
-//   });
+//   const { data: details, isFetching: isDetailsLoading } =
+//     useGetProjectDetailsQuery(projectId, {
+//       skip: !projectId,
+//       refetchOnMountOrArgChange: true,
+//     });
 
-//   // 🟢 3. AUTO-REDIRECT LOGIC: If the project finishes, take user to the report automatically
+//   // 2-Second Buffer timer (Created for Interactive Polish)
 //   useEffect(() => {
-//     if (status?.status === "completed") {
-//       // Small delay so user sees "Complete" state before redirect
-//       const timer = setTimeout(() => {
-//         if (onReset) onReset(); // Clear parent state if applicable
-//         navigate(`/dashboard/report-view/${projectId}`, { replace: true });
-//       }, 1000);
-//       return () => clearTimeout(timer);
-//     }
-//   }, [status?.status, navigate, projectId, onReset]);
+//     const timer = setTimeout(() => setIsSkeletonBufferDone(true), 2000);
+//     return () => clearTimeout(timer);
+//   }, [projectId]);
 
-//   // Handle errors (Project not found or Auth expiry)
+//   const activeStepNumber = useMemo(() => {
+//     if (!status || status.mode !== "interactive") return 1;
+//     const stepMap = {
+//       initializing: 1,
+//       claimSelection: 2,
+//       generatingMapping: 3,
+//       targetSelection: 4,
+//       productProcessing: 5,
+//       finalizing: 5,
+//     };
+//     return stepMap[status.currentStep] || 2;
+//   }, [status]);
+
 //   if (isError || status?.status === "failed") {
 //     return (
 //       <FailureState
@@ -75,71 +79,110 @@
 
 //   if (!status)
 //     return (
-//       <div className="p-20 flex flex-col items-center justify-center animate-pulse">
-//         <Loader2 className="animate-spin text-[#ff6b00] mb-4" size={48} />
-//         <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">
-//           Connecting to Engine...
-//         </p>
+//       <div className="p-20 flex justify-center">
+//         <Loader2 className="animate-spin text-[#ff6b00]" size={40} />
 //       </div>
 //     );
 
 //   const renderContent = () => {
-//     // 🟢 Terminal Success State
+//     // 🛑 1. Completion check (Always first)
 //     if (status.status === "completed") {
 //       return (
 //         <SuccessState
 //           projectId={projectId}
-//           data={details?.project || status} // Use status if details not yet loaded
+//           data={status}
 //           onClose={onReset || (() => navigate("/dashboard/projects"))}
 //         />
 //       );
 //     }
 
-//     // 🟠 Interactive Mode Step Logic
-//     switch (status.currentStep) {
-//       case "claimSelection":
+//     // 🟢 2. QUICK & BULK BRANCH (NO SKELETON ALLOWED HERE)
+//     // If mode is quick or bulk, go DIRECTLY to ProcessingState
+//     if (status.mode === "quick" || status.mode === "bulk") {
+//       return <ProcessingState status={status} />;
+//     }
+
+//     // 🟠 3. INTERACTIVE BRANCH (Skeleton & Mapping Loaders live here only)
+//     if (status.mode === "interactive") {
+//       const claimsReady = !!details?.project?.allClaims?.length;
+//       const mappingReady = !!details?.project?.results?.pcrAnalysis?.length;
+
+//       // Show Initial Skeleton (Image 1)
+//       if (
+//         !isSkeletonBufferDone ||
+//         status.currentStep === "initializing" ||
+//         (status.currentStep === "claimSelection" && !claimsReady)
+//       ) {
 //         return (
-//           <div className="flex flex-col items-center w-full gap-6">
-//             <Stepper activeStep={2} />
+//           <InteractiveMappingLoader
+//             step="initializing"
+//             patentId={status.patentId}
+//             status={status}
+//           />
+//         );
+//       }
+
+//       // Show Progress Loader (Image 2)
+//       if (
+//         status.currentStep === "generatingMapping" ||
+//         (status.currentStep === "targetSelection" && !mappingReady)
+//       ) {
+//         return (
+//           <InteractiveMappingLoader
+//             step="mapping"
+//             patentId={status.patentId}
+//             claimNumber={status.selectedClaim?.number}
+//             status={status}
+//           />
+//         );
+//       }
+
+//       // Actual interactive views
+//       switch (status.currentStep) {
+//         case "claimSelection":
+//           return (
 //             <ClaimsStep
 //               projectId={projectId}
 //               data={details?.project}
-//               onProceed={() => {}} // Polling handles the transition automatically
+//               onProceed={() => {}}
 //             />
-//           </div>
-//         );
-
-//       case "targetSelection":
-//         return !showTargetGrid ? (
-//           <MappingView
-//             projectId={projectId}
-//             data={details?.project}
-//             onProceed={() => setShowTargetGrid(true)}
-//           />
-//         ) : (
-//           <TargetSelectionStep
-//             projectId={projectId}
-//             data={details?.project}
-//             onBack={() => setShowTargetGrid(false)}
-//           />
-//         );
-
-//       default:
-//         // 🔵 Processing Loader (Quick, Bulk, or Intermediate steps)
-//         return <ProcessingState status={status} />;
+//           );
+//         case "targetSelection":
+//           return !showTargetGrid ? (
+//             <MappingView
+//               data={details?.project}
+//               onProceed={() => setShowTargetGrid(true)}
+//             />
+//           ) : (
+//             <TargetSelectionStep
+//               projectId={projectId}
+//               data={details?.project}
+//               onBack={() => setShowTargetGrid(false)}
+//             />
+//           );
+//         case "finalizing":
+//           return <FinalizingLoader status={status} />;
+//         default:
+//           return <ProcessingState status={status} />;
+//       }
 //     }
+
+//     // Fallback
+//     return <ProcessingState status={status} />;
 //   };
 
 //   return (
-//     <div className="w-full flex flex-col items-center animate-scale-up">
+//     <div className="w-full flex flex-col items-center animate-scale-up max-w-[1400px] mx-auto px-4 pb-20">
+//       {status.mode === "interactive" && status.status !== "completed" && (
+//         <div className="w-full animate-fade-in mb-8">
+//           <Stepper activeStep={activeStepNumber} />
+//         </div>
+//       )}
 //       <div className="w-full">
 //         <Suspense
 //           fallback={
-//             <div className="p-20 flex flex-col items-center justify-center">
-//               <Loader2 className="animate-spin text-[#ff6b00] mb-4" size={48} />
-//               <span className="text-gray-400 font-bold text-xs uppercase tracking-widest">
-//                 Assembling View...
-//               </span>
+//             <div className="p-20 flex justify-center">
+//               <Loader2 className="animate-spin text-[#ff6b00]" size={48} />
 //             </div>
 //           }
 //         >
@@ -185,8 +228,9 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
   const projectId = propId || paramId;
 
   const [showTargetGrid, setShowTargetGrid] = useState(false);
-  const [isSkeletonBufferDone, setIsSkeletonBufferDone] = useState(false);
+  const [isInitialBufferDone, setIsInitialBufferDone] = useState(false);
 
+  // 1. Status Polling
   const {
     data: status,
     isError,
@@ -196,15 +240,18 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
     pollingInterval: 2500,
   });
 
-  const { data: details, isFetching: isDetailsLoading } =
-    useGetProjectDetailsQuery(projectId, {
+  // 2. Details Query - 🟢 FIX: We do NOT use isFetching to trigger loaders
+  // isFetching is true every 2 seconds during polling, which causes the BLINKING.
+  const { data: details, isLoading: isFirstLoad } = useGetProjectDetailsQuery(
+    projectId,
+    {
       skip: !projectId,
-      refetchOnMountOrArgChange: true,
-    });
+    },
+  );
 
-  // 2-Second Buffer timer (Created for Interactive Polish)
+  // 2-Second Buffer timer (Interactive Only)
   useEffect(() => {
-    const timer = setTimeout(() => setIsSkeletonBufferDone(true), 2000);
+    const timer = setTimeout(() => setIsInitialBufferDone(true), 2000);
     return () => clearTimeout(timer);
   }, [projectId]);
 
@@ -238,7 +285,7 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
     );
 
   const renderContent = () => {
-    // 🛑 1. Completion check (Always first)
+    // 🛑 1. Completion check
     if (status.status === "completed") {
       return (
         <SuccessState
@@ -249,20 +296,21 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
       );
     }
 
-    // 🟢 2. QUICK & BULK BRANCH (NO SKELETON ALLOWED HERE)
-    // If mode is quick or bulk, go DIRECTLY to ProcessingState
+    // 🟢 2. QUICK & BULK BRANCH (The Express Lane)
+    // No Skeleton logic, no isInitialBufferDone check.
+    // This stops the blinking/skeleton in Quick mode.
     if (status.mode === "quick" || status.mode === "bulk") {
       return <ProcessingState status={status} />;
     }
 
-    // 🟠 3. INTERACTIVE BRANCH (Skeleton & Mapping Loaders live here only)
+    // 🟠 3. INTERACTIVE BRANCH
     if (status.mode === "interactive") {
       const claimsReady = !!details?.project?.allClaims?.length;
       const mappingReady = !!details?.project?.results?.pcrAnalysis?.length;
 
-      // Show Initial Skeleton (Image 1)
+      // 🛡️ SKELETON GUARD: Only show if it's actually the start OR if data is physically missing
       if (
-        !isSkeletonBufferDone ||
+        !isInitialBufferDone ||
         status.currentStep === "initializing" ||
         (status.currentStep === "claimSelection" && !claimsReady)
       ) {
@@ -275,20 +323,21 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
         );
       }
 
-      // Show Progress Loader (Image 2)
-      if (
-        status.currentStep === "generatingMapping" ||
-        (status.currentStep === "targetSelection" && !mappingReady)
-      ) {
-        return (
-          <InteractiveMappingLoader
-            step="mapping"
-            patentId={status.patentId}
-            claimNumber={status.selectedClaim?.number}
-            status={status}
-          />
-        );
-      }
+      // // 🛡️ MAPPING GUARD: Only show if data is physically missing from the cache
+      // // We removed 'isFetching' here to stop the blinking.
+      // if (
+      //   status.currentStep === "generatingMapping" ||
+      //   (status.currentStep === "targetSelection" && !mappingReady)
+      // ) {
+      //   return (
+      //     <InteractiveMappingLoader
+      //       step="mapping"
+      //       patentId={status.patentId}
+      //       claimNumber={status.selectedClaim?.number}
+      //       status={status}
+      //     />
+      //   );
+      // }
 
       // Actual interactive views
       switch (status.currentStep) {
@@ -313,6 +362,7 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
               onBack={() => setShowTargetGrid(false)}
             />
           );
+        case "productProcessing":
         case "finalizing":
           return <FinalizingLoader status={status} />;
         default:
@@ -320,7 +370,6 @@ const ProcessingWizard = memo(({ projectId: propId, onReset }) => {
       }
     }
 
-    // Fallback
     return <ProcessingState status={status} />;
   };
 
