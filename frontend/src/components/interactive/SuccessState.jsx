@@ -226,12 +226,12 @@ const SuccessState = memo(({ projectId, data, onClose }) => {
       )}
 
       {/* Persistent close link at bottom */}
-      <button
+      {/* <button
         onClick={onClose}
-        className="mt-16 text-gray-500 hover:text-[#e66000] font-black text-[11px] uppercase tracking-[3px] transition-colors"
+        className="mt-16 text-gray-500 hover:text-[#e66000] font-black text-[18px] capitalize tracking-[1px] transition-colors"
       >
         Close Window
-      </button>
+      </button> */}
     </div>
   );
 });

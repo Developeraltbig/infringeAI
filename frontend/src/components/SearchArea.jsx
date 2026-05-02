@@ -702,7 +702,7 @@ const SearchArea = memo(({ onStarted }) => {
   }, [inputValue, bulkPatents, dispatch]);
 
   const handleDownloadTemplate = useCallback(() => {
-    const templateData = [["Patent Number"], ["US10686266B2"], ["EP3456789A1"]];
+    const templateData = [["US10686266B2"], ["EP3456789A1"]];
     const worksheet = XLSX.utils.aoa_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Patents");
